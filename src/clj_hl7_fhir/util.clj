@@ -1,0 +1,43 @@
+(ns clj-hl7-fhir.util
+  (:import (java.util TimeZone Date)
+           (java.text SimpleDateFormat))
+  (:require [clojure.string :as str]
+            [cemerick.url :refer [url url-encode]]))
+
+(def tz (TimeZone/getDefault))
+(def iso8601 "yyyy-MM-dd'T'HH:mm:ssZZ")
+
+(defn ->iso-date
+  "returns an ISO8601 formatted date/time string for the given date. this is the format
+   which FHIR expects all date/times to be in"
+  [^Date date]
+  (if date
+    (let [df (SimpleDateFormat. iso8601)]
+      (.setTimeZone df tz)
+      (.format df date))))
+
+(defn kv-vector->query
+  "should really be using cemerick.url/map->query in all cases except when you need 2 values under the
+   name name in the query string (such as with FHIR's date 'between' search support)"
+  [kvs]
+  (some->> (partition 2 kvs)
+           (map (fn [[k v]]
+                  [(url-encode (name k))
+                   "="
+                   (url-encode (str v))]))
+           (interpose "&")
+           flatten
+           (apply str)))
+
+(defn join-paths [& paths]
+  (as-> paths x
+        (remove nil? x)
+        (str/join "/" x)
+        (str/replace x #"(/+)" "/")))
+
+(defn build-url [base-url path & [params]]
+  (-> (url base-url)
+      (update-in [:path] (fn [existing-path]
+                           (join-paths existing-path path)))
+      (assoc :query params)
+      (str)))
