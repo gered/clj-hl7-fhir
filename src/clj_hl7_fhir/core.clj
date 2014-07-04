@@ -95,7 +95,10 @@
        :href))
 
 (defn collect-resources
-  "returns a sequence containing all of the resources contained in the given bundle"
+  "returns a sequence containing all of the resources contained in the given bundle
+
+  reference:
+  bundles: http://hl7.org/implement/standards/fhir/extras.html#bundle"
   [bundle]
   (->> bundle
        :entry
@@ -106,7 +109,11 @@
    next page of resources as indicated by the link information contained in the
    passed bundle. the return value is another bundle that can be passed again
    to this function to get subsequent pages. if this function is passed the
-   bundle for the last page of resources, nil is returned"
+   bundle for the last page of resources, nil is returned
+
+   reference:
+   bundles: http://hl7.org/implement/standards/fhir/extras.html#bundle
+   paging: http://hl7.org/implement/standards/fhir/http.html#paging"
   [bundle]
   (if-let [next-url (get-bundle-next-page-url bundle)]
     (http-get-json next-url)))
@@ -114,7 +121,11 @@
 (defn fetch-all
   "for resources that are returned over more then one page, this will automatically
    fetch all pages of resources and return a final sequence containing all of them
-   in order"
+   in order
+
+   reference:
+   bundles: http://hl7.org/implement/standards/fhir/extras.html#bundle
+   paging: http://hl7.org/implement/standards/fhir/http.html#paging"
   [bundle]
   (loop [current-page bundle
          fetched      []]
@@ -144,7 +155,10 @@
           (throw ex))))))
 
 (defn get-resource-bundle
-  "gets a single resource from a FHIR server that is contained in a bundle."
+  "gets a single resource from a FHIR server that is contained in a bundle.
+
+  reference:
+  bundles: http://hl7.org/implement/standards/fhir/extras.html#bundle"
   [base-url type id]
   (let [resource-name (->fhir-resource-name type)
         url-components ["/" resource-name]]
@@ -156,6 +170,8 @@
 (defn search
   "searches for resources on a FHIR server. multiple parameters are ANDed together. use of the search
    operator helper functions is encouraged to ensure proper escaping/encoding of search parameters.
+   the results of this function can be passed to fetch-next-page or fetch-all to collect resources
+   returned in paged search results easier
 
    reference:
    search: http://hl7.org/implement/standards/fhir/http.html#search"
