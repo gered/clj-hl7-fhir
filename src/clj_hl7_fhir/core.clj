@@ -12,8 +12,8 @@
 
 (defn- fhir-get-request [base-url resource-url & [params]]
   (let [query (cond
-                (seq? params) (->> params (concat [:_format "json"]) (kv-vector->query))
-                :else         (merge {:_format "json"} params))]
+                (sequential? params) (->> params (concat [:_format "json"]) (kv-vector->query))
+                :else                (merge {:_format "json"} params))]
     (-> (build-url base-url resource-url query)
         (http/get)
         :body
