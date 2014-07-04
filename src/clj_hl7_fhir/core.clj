@@ -88,12 +88,41 @@
               (format-search-value value))]))
        (apply concat)))
 
+(defn- get-bundle-next-page-url [bundle]
+  (->> (:link bundle)
+       (filter #(= "next" (:rel %)))
+       (first)
+       :href))
+
 (defn collect-resources
   "returns a sequence containing all of the resources contained in the given bundle"
   [bundle]
   (->> bundle
        :entry
        (map :content)))
+
+(defn fetch-next-page
+  "for resources that are returned over more then one page, this will fetch the
+   next page of resources as indicated by the link information contained in the
+   passed bundle. the return value is another bundle that can be passed again
+   to this function to get subsequent pages. if this function is passed the
+   bundle for the last page of resources, nil is returned"
+  [bundle]
+  (if-let [next-url (get-bundle-next-page-url bundle)]
+    (http-get-json next-url)))
+
+(defn fetch-all
+  "for resources that are returned over more then one page, this will automatically
+   fetch all pages of resources and return a final sequence containing all of them
+   in order"
+  [bundle]
+  (loop [current-page bundle
+         fetched      []]
+    (let [latest-fetched (concat fetched (collect-resources current-page))
+          next-page      (fetch-next-page current-page)]
+      (if next-page
+        (recur next-page latest-fetched)
+        latest-fetched))))
 
 (defn get-resource
   "gets a single resource from a FHIR server. can optionally get a specific version of a resource.
