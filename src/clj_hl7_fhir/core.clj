@@ -1,5 +1,6 @@
 (ns clj-hl7-fhir.core
-  (:import (java.util Date))
+  (:import (java.util Date)
+           (clojure.lang ExceptionInfo))
   (:require [clojure.string :as str]
             [clj-http.client :as http]
             [cheshire.core :as json])
@@ -67,9 +68,13 @@
         url-components (if version
                          ["/" resource-name id "_history" version]
                          ["/" resource-name id])]
-    (fhir-get-request
-      base-url
-      (apply join-paths url-components))))
+    (try
+      (fhir-get-request
+        base-url
+        (apply join-paths url-components))
+      (catch ExceptionInfo ex
+        (if (not= 404 (get-in (ex-data ex) [:object :status]))
+          (throw ex))))))
 
 (defn get-resource-bundle
   "gets a single resource from a FHIR server that is contained in a bundle."
