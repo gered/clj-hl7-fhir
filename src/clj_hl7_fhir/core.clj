@@ -5,13 +5,13 @@
   (:use [camel-snake-kebab]
         [clj-hl7-fhir.util]))
 
+(def ^:private base-params {:_format "json"})
+
 (defn- ->fhir-resource-name [x]
   (name (->CamelCase x)))
 
 (defn- fhir-get-request [base-url resource-url & [params]]
-  (let [query (cond
-                (sequential? params) (->> params (concat [:_format "json"]) (kv-vector->query))
-                :else                (merge {:_format "json"} params))]
+  (let [query (map->query-string (merge base-params params))]
     (http-get-json (build-url base-url resource-url query))))
 
 (defn- ->search-param-name [parameter & [modifier]]
@@ -77,7 +77,7 @@
     :else
     (-> value str escape-parameter)))
 
-(defn- search-params->query-kvs [params]
+(defn- search-params->query-map [params]
   (->> params
        (apply concat)
        (map
@@ -86,7 +86,12 @@
             (str
               (if-not (= "=" operator) operator)
               (format-search-value value))]))
-       (apply concat)))
+       (reduce
+         (fn [m [name value]]
+           (if (contains? m name)
+             (update-in m [name] #(conj (if (vector? %) % [%]) value))
+             (assoc m name value)))
+         {})))
 
 (defn- get-bundle-next-page-url [bundle]
   (->> (:link bundle)
@@ -175,11 +180,12 @@
 
    reference:
    search: http://hl7.org/implement/standards/fhir/http.html#search"
-  [base-url type & params]
+  [base-url type where & params]
   (let [resource-name  (->fhir-resource-name type)
         url-components ["/" resource-name]]
     (fhir-get-request
       base-url
       (apply join-paths url-components)
-      (search-params->query-kvs params))))
-
+      (merge
+        (search-params->query-map where)
+        (apply hash-map params)))))

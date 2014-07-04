@@ -18,6 +18,22 @@
       (.setTimeZone df tz)
       (.format df date))))
 
+(defn map->query-string [m]
+  (->> m
+       (reduce
+         (fn [query-values [param-name value]]
+           (concat
+             query-values
+             (map
+               #(str (url-encode (name param-name))
+                     "="
+                     (url-encode (str %)))
+               (if (vector? value) value [value]))))
+         [])
+       (interpose "&")
+       (flatten)
+       (apply str)))
+
 (defn kv-vector->query
   "should really be using cemerick.url/map->query in all cases except when you need 2 values under the
    name name in the query string (such as with FHIR's date 'between' search support)"
