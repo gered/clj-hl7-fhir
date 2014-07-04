@@ -93,6 +93,13 @@
               (format-search-value value))]))
        (apply concat)))
 
+(defn collect-resources
+  "returns a sequence containing all of the resources contained in the given bundle"
+  [bundle]
+  (->> bundle
+       :entry
+       (map :content)))
+
 (defn get-resource
   "gets a single resource from a FHIR server. can optionally get a specific version of a resource.
 
