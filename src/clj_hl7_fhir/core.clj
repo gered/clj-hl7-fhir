@@ -19,36 +19,26 @@
         :body
         (json/parse-string true))))
 
-(defn- format-search-value [x]
-  (-> (cond
-        (instance? Date x) (->iso-date x)
-        :else              (str x))
-      (.replace "\\" "\\\\")
-      (.replace "$" "\\$")
-      (.replace "," "\\,")
-      (.replace "|" "\\|")))
-
-(defn- make-search-param-name [parameter & [modifier]]
+(defn- ->search-param-name [parameter & [modifier]]
   (keyword
     (str
       (name parameter)
       (if modifier
         (str ":" (name modifier))))))
 
+(defn ->search-param-descriptor [parameter value operator {:keys [modifier]}]
+  {:name (->search-param-name parameter modifier)
+   :operator operator
+   :value value})
+
 (defmacro single-search-op [name operator]
-  `(defn ~name [parameter# value# & {:keys [modifier#]}]
-     [(make-search-param-name parameter# modifier#)
-      (str (if-not (= "=" ~operator) ~operator)
-           (format-search-value value#))]))
+  `(defn ~name [parameter# value# & options#]
+     [(->search-param-descriptor parameter# value# ~operator (apply hash-map options#))]))
 
 (defmacro double-search-op [name operator1 operator2]
-  `(defn ~name [parameter# value1# value2# & {:keys [modifier#]}]
-     [(make-search-param-name parameter# modifier#)
-      (str (if-not (= "=" ~operator1) ~operator1)
-           (format-search-value value1#))
-      (make-search-param-name parameter# modifier#)
-      (str (if-not (= "=" ~operator2) ~operator2)
-           (format-search-value value2#))]))
+  `(defn ~name [parameter# value1# value2# & options#]
+     [(->search-param-descriptor parameter# value1# ~operator1 (apply hash-map options#))
+      (->search-param-descriptor parameter# value2# ~operator2 (apply hash-map options#))]))
 
 (single-search-op eq "=")
 (single-search-op lt "<")
@@ -56,6 +46,47 @@
 (single-search-op gt ">")
 (single-search-op gte ">=")
 (double-search-op between ">" "<")
+
+(defn namespaced
+  ([value]
+   (namespaced nil value))
+  ([namespace value]
+   {:namespace namespace
+    :value value}))
+
+(defn- escape-parameter [value]
+  (-> value
+      (.replace "\\" "\\\\")
+      (.replace "$" "\\$")
+      (.replace "," "\\,")
+      (.replace "|" "\\|")))
+
+(defn- format-search-value [value]
+  (cond
+    (sequential? value)
+    (->> value
+         (map format-search-value)
+         (str/join ","))
+
+    (map? value)
+    (str (:namespace value) "|" (format-search-value (:value value)))
+
+    (instance? Date value)
+    (->iso-date value)
+
+    :else
+    (-> value str escape-parameter)))
+
+(defn- search-params->query-kvs [params]
+  (->> params
+       (apply concat)
+       (map
+         (fn [{:keys [name operator value]}]
+           [name
+            (str
+              (if-not (= "=" operator) operator)
+              (format-search-value value))]))
+       (apply concat)))
 
 (defn get-resource
   "gets a single resource from a FHIR server. can optionally get a specific version of a resource.
@@ -98,5 +129,5 @@
     (fhir-get-request
       base-url
       (apply join-paths url-components)
-      (apply concat params))))
+      (search-params->query-kvs params))))
 
