@@ -61,6 +61,6 @@
       (str)))
 
 (defn http-get-json [url]
-  (-> (http/get url)
+  (-> (http/get url {:accept "application/json+fhir"})
       :body
       (json/parse-string true)))
