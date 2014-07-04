@@ -1,9 +1,7 @@
 (ns clj-hl7-fhir.core
   (:import (java.util Date)
            (clojure.lang ExceptionInfo))
-  (:require [clojure.string :as str]
-            [clj-http.client :as http]
-            [cheshire.core :as json])
+  (:require [clojure.string :as str])
   (:use [camel-snake-kebab]
         [clj-hl7-fhir.util]))
 
@@ -14,10 +12,7 @@
   (let [query (cond
                 (sequential? params) (->> params (concat [:_format "json"]) (kv-vector->query))
                 :else                (merge {:_format "json"} params))]
-    (-> (build-url base-url resource-url query)
-        (http/get)
-        :body
-        (json/parse-string true))))
+    (http-get-json (build-url base-url resource-url query))))
 
 (defn- ->search-param-name [parameter & [modifier]]
   (keyword

@@ -2,7 +2,9 @@
   (:import (java.util TimeZone Date)
            (java.text SimpleDateFormat))
   (:require [clojure.string :as str]
-            [cemerick.url :refer [url url-encode]]))
+            [clj-http.client :as http]
+            [cemerick.url :refer [url url-encode]]
+            [cheshire.core :as json]))
 
 (def tz (TimeZone/getDefault))
 (def iso8601 "yyyy-MM-dd'T'HH:mm:ssZZ")
@@ -41,3 +43,8 @@
                            (join-paths existing-path path)))
       (assoc :query params)
       (str)))
+
+(defn http-get-json [url]
+  (-> (http/get url)
+      :body
+      (json/parse-string true)))
