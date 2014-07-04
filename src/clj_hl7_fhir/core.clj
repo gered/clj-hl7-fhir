@@ -5,13 +5,11 @@
   (:use [camel-snake-kebab]
         [clj-hl7-fhir.util]))
 
-(def ^:private base-params {:_format "json"})
-
 (defn- ->fhir-resource-name [x]
   (name (->CamelCase x)))
 
 (defn- fhir-get-request [base-url resource-url & [params]]
-  (let [query (map->query-string (merge base-params params))]
+  (let [query (map->query-string params)]
     (http-get-json (build-url base-url resource-url query))))
 
 (defn- ->search-param-name [parameter & [modifier]]
