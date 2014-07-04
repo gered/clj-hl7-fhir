@@ -71,6 +71,16 @@
       base-url
       (apply join-paths url-components))))
 
+(defn get-resource-bundle
+  "gets a single resource from a FHIR server that is contained in a bundle."
+  [base-url type id]
+  (let [resource-name (->fhir-resource-name type)
+        url-components ["/" resource-name]]
+    (fhir-get-request
+      base-url
+      (apply join-paths url-components)
+      {:_id id})))
+
 (defn search
   "searches for resources on a FHIR server. multiple parameters are ANDed together. use of the search
    operator helper functions is encouraged to ensure proper escaping/encoding of search parameters.
