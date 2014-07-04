@@ -19,9 +19,13 @@
         (json/parse-string true))))
 
 (defn- format-search-value [x]
-  (cond
-    (instance? Date x) (->iso-date x)
-    :else              x))
+  (-> (cond
+        (instance? Date x) (->iso-date x)
+        :else              (str x))
+      (.replace "\\" "\\\\")
+      (.replace "$" "\\$")
+      (.replace "," "\\,")
+      (.replace "|" "\\|")))
 
 (defn- make-search-param-name [parameter & [modifier]]
   (keyword
