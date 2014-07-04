@@ -1,6 +1,9 @@
 # clj-hl7-fhir
 
-[HL7 FHIR](http://hl7.org/implement/standards/fhir/) JSON client.
+[HL7 FHIR](http://hl7.org/implement/standards/fhir/) JSON client for use in Clojure applications.
+
+**This library should not even be considered in an "alpha" state yet. Caution is advised if
+you are looking to use this for real-world use right now. Stay tuned!**
 
 ## Usage
 
