@@ -22,7 +22,12 @@
 (defn- ->search-param-name [parameter & [modifier]]
   (keyword
     (str
-      (name parameter)
+      (if (vector? parameter)
+        (->> parameter
+             (map name)
+             (str/join ".")
+             )
+        (name parameter))
       (if modifier
         (str ":" (name modifier))))))
 
