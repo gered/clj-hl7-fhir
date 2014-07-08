@@ -76,7 +76,19 @@
       (assoc :query params)
       (str)))
 
-(defn http-get-json [url]
-  (-> (http/get url {:accept "application/json+fhir"})
+(defn- http-request [f url & [params]]
+  (-> (f url (merge {:accept "application/json+fhir"} params))
       :body
       (json/parse-string true)))
+
+(defn http-get-json [url]
+  (http-request http/get url))
+
+(defn http-post-json [url & [body]]
+  (http-request http/post url (if body {:body body})))
+
+(defn http-put-json [url & [body]]
+  (http-request http/put url (if body {:body body})))
+
+(defn http-delete-json [url & [body]]
+  (http-request http/delete url (if body {:body body})))

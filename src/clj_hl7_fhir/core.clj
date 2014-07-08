@@ -8,9 +8,14 @@
 (defn- ->fhir-resource-name [x]
   (name (->CamelCase x)))
 
-(defn- fhir-get-request [base-url resource-url & [params]]
-  (let [query (map->query-string params)]
-    (http-get-json (build-url base-url resource-url query))))
+(defn- fhir-request [type base-url resource-url & {:keys [params body]}]
+  (let [query (map->query-string params)
+        url   (build-url base-url resource-url query)]
+    (case type
+      :get    (http-get-json url)
+      :post   (http-post-json url body)
+      :put    (http-put-json url body)
+      :delete (http-delete-json url body))))
 
 (defn- ->search-param-name [parameter & [modifier]]
   (keyword
@@ -174,7 +179,7 @@
    relative url: http://hl7.org/implement/standards/fhir/references.html#atom-rel"
   ([base-url relative-resource-url]
    (try
-     (fhir-get-request
+     (fhir-request :get
        base-url
        relative-resource-url)
      (catch ExceptionInfo ex
@@ -207,10 +212,10 @@
   [base-url type id]
   (let [resource-name (->fhir-resource-name type)
         url-components ["/" resource-name]]
-    (fhir-get-request
+    (fhir-request :get
       base-url
       (apply join-paths url-components)
-      {:_id id})))
+      :params {:_id id})))
 
 (defn search
   "searches for resources on a FHIR server. multiple parameters are ANDed together. use of the search
@@ -223,15 +228,15 @@
   [base-url type where & params]
   (let [resource-name  (->fhir-resource-name type)
         url-components ["/" resource-name]]
-    (fhir-get-request
+    (fhir-request :get
       base-url
       (apply join-paths url-components)
-      (merge
-        (search-params->query-map where)
-        (apply hash-map (if (and (seq? params)
-                                 (= 1 (count params)))
-                          (first params)
-                          params))))))
+      :params (merge
+                (search-params->query-map where)
+                (apply hash-map (if (and (seq? params)
+                                         (= 1 (count params)))
+                                  (first params)
+                                  params))))))
 
 (defn search-and-fetch
   "same as search, but automatically fetches all pages of resources returning a single bundle
