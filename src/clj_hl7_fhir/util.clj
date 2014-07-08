@@ -7,7 +7,7 @@
             [cheshire.core :as json]))
 
 (def tz (TimeZone/getDefault))
-(def iso8601-timestamp "yyyy-MM-dd'T'HH:mm:ss")
+(def iso8601-timestamp "yyyy-MM-dd'T'HH:mm:ssXXX")
 (def iso8601-date "yyyy-MM-dd")
 
 (defn format-date [^Date date ^String format]
