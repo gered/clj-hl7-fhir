@@ -163,6 +163,8 @@
 
 (defn get-resource
   "gets a single resource from a FHIR server. can optionally get a specific version of a resource.
+   the raw resource itself is returned (that is, it is not contained in a bundle). if the
+   resource could not be found, nil is returned.
 
    reference:
    read: http://hl7.org/implement/standards/fhir/http.html#read
@@ -181,7 +183,8 @@
           (throw ex))))))
 
 (defn get-resource-bundle
-  "gets a single resource from a FHIR server that is contained in a bundle.
+  "gets a single resource from a FHIR server. the returned resource will be contained in a
+   bundle. if the resource could not be found, a bundle containing zero resources is returned.
 
   reference:
   bundles: http://hl7.org/implement/standards/fhir/extras.html#bundle"
