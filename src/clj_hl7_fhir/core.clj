@@ -24,33 +24,19 @@
       (if modifier
         (str ":" (name modifier))))))
 
-(defn ->search-param-descriptor [parameter value operator {:keys [modifier]}]
+(defn- ->search-param-descriptor [parameter value operator {:keys [modifier]}]
   {:name (->search-param-name parameter modifier)
    :operator operator
    :value value})
 
-(defmacro single-search-op [name operator]
+(defmacro ^:private single-search-op [name operator]
   `(defn ~name [parameter# value# & options#]
      [(->search-param-descriptor parameter# value# ~operator (apply hash-map options#))]))
 
-(defmacro double-search-op [name operator1 operator2]
+(defmacro ^:private double-search-op [name operator1 operator2]
   `(defn ~name [parameter# value1# value2# & options#]
      [(->search-param-descriptor parameter# value1# ~operator1 (apply hash-map options#))
       (->search-param-descriptor parameter# value2# ~operator2 (apply hash-map options#))]))
-
-(single-search-op eq "=")
-(single-search-op lt "<")
-(single-search-op lte "<=")
-(single-search-op gt ">")
-(single-search-op gte ">=")
-(double-search-op between ">" "<")
-
-(defn namespaced
-  ([value]
-   (namespaced nil value))
-  ([namespace value]
-   {:namespace namespace
-    :value value}))
 
 (defn- escape-parameter [value]
   (-> value
@@ -96,6 +82,20 @@
        (filter #(= "next" (:rel %)))
        (first)
        :href))
+
+(single-search-op eq "=")
+(single-search-op lt "<")
+(single-search-op lte "<=")
+(single-search-op gt ">")
+(single-search-op gte ">=")
+(double-search-op between ">" "<")
+
+(defn namespaced
+  ([value]
+   (namespaced nil value))
+  ([namespace value]
+   {:namespace namespace
+    :value value}))
 
 (defn collect-resources
   "returns a sequence containing all of the resources contained in the given bundle
