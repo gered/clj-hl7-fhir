@@ -7,16 +7,24 @@
             [cheshire.core :as json]))
 
 (def tz (TimeZone/getDefault))
-(def iso8601 "yyyy-MM-dd'T'HH:mm:ssZZ")
+(def iso8601-timestamp "yyyy-MM-dd'T'HH:mm:ss")
+(def iso8601-date "yyyy-MM-dd")
 
-(defn ->iso-date
-  "returns an ISO8601 formatted date/time string for the given date. this is the format
-   which FHIR expects all date/times to be in"
-  [^Date date]
+(defn format-date [^Date date ^String format]
   (if date
-    (let [df (SimpleDateFormat. iso8601)]
+    (let [df (SimpleDateFormat. format)]
       (.setTimeZone df tz)
       (.format df date))))
+
+(defn ->iso-timestamp
+  "returns an ISO8601 formatted date/time string for the given date object"
+  [^Date date]
+  (format-date date iso8601-timestamp))
+
+(defn ->iso-date
+  "returns an ISO8601 formatted date string for the given date object"
+  [^Date date]
+  (format-date date iso8601-date))
 
 (defn map->query-string [m]
   (->> m
