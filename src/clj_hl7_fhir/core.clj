@@ -56,7 +56,7 @@
     (str (:namespace value) "|" (format-search-value (:value value)))
 
     (instance? Date value)
-    (->iso-timestamp value)
+    (->timestamp value)
 
     :else
     (-> value str escape-parameter)))
