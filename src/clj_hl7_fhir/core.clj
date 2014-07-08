@@ -121,22 +121,45 @@
   (if-let [next-url (get-bundle-next-page-url bundle)]
     (http-get-json next-url)))
 
+(defn- concat-bundle-entries [bundle other-bundle]
+  (if (nil? bundle)
+    other-bundle
+    (update-in
+      bundle [:entry]
+      (fn [existing-entries]
+        (->> (:entry other-bundle)
+             (concat existing-entries)
+             (vec))))))
+
+(defn- strip-bundle-page-links [bundle]
+  (if bundle
+    (assoc bundle
+      :link
+      (->> (:link bundle)
+           (remove
+             (fn [{:keys [rel]}]
+               (or (= rel "first")
+                   (= rel "last")
+                   (= rel "next")
+                   (= rel "previous"))))
+           (vec)))))
+
 (defn fetch-all
   "for resources that are returned over more then one page, this will automatically
-   fetch all pages of resources and return a final sequence containing all of them
-   in order
+   fetch all pages of resources and them into a single bundle that contains all of
+   the resources.
 
    reference:
    bundles: http://hl7.org/implement/standards/fhir/extras.html#bundle
    paging: http://hl7.org/implement/standards/fhir/http.html#paging"
   [bundle]
-  (loop [current-page bundle
-         fetched      []]
-    (let [latest-fetched (concat fetched (collect-resources current-page))
-          next-page      (fetch-next-page current-page)]
+  (loop [current-page   bundle
+         working-bundle nil]
+    (let [merged    (concat-bundle-entries working-bundle current-page)
+          next-page (fetch-next-page current-page)]
       (if next-page
-        (recur next-page latest-fetched)
-        latest-fetched))))
+        (recur next-page merged)
+        (strip-bundle-page-links merged)))))
 
 (defn get-resource
   "gets a single resource from a FHIR server. can optionally get a specific version of a resource.
