@@ -1,6 +1,6 @@
 (defproject clj-hl7-fhir "0.1.0-SNAPSHOT"
   :description "HL7 FHIR JSON client"
-  :url "https://github.com/gered/clj-hapi-fhir"
+  :url "https://github.com/gered/clj-hl7-fhir"
   :license {:name "Apache License, Version 2.0"
             :url "http://www.apache.org/licenses/LICENSE-2.0"}
   :dependencies [[org.clojure/clojure "1.6.0"]
