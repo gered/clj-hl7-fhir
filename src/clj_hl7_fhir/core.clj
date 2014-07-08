@@ -162,25 +162,41 @@
         (strip-bundle-page-links merged)))))
 
 (defn get-resource
-  "gets a single resource from a FHIR server. can optionally get a specific version of a resource.
-   the raw resource itself is returned (that is, it is not contained in a bundle). if the
-   resource could not be found, nil is returned.
+  "gets a single resource from a FHIR server. the raw resource itself is returned (that is,
+   it is not contained in a bundle). if the resource could not be found, nil is returned.
+
+   a relative url can be used to identify the resource to be retrieved, or a resource type,
+   id and optional version number can be used.
 
    reference:
    read: http://hl7.org/implement/standards/fhir/http.html#read
-   vread: http://hl7.org/implement/standards/fhir/http.html#vread"
-  [base-url type id & {:keys [version]}]
-  (let [resource-name  (->fhir-resource-name type)
-        url-components (if version
-                         ["/" resource-name id "_history" version]
-                         ["/" resource-name id])]
-    (try
-      (fhir-get-request
-        base-url
-        (apply join-paths url-components))
-      (catch ExceptionInfo ex
-        (if (not= 404 (get-in (ex-data ex) [:object :status]))
-          (throw ex))))))
+   vread: http://hl7.org/implement/standards/fhir/http.html#vread
+   relative url: http://hl7.org/implement/standards/fhir/references.html#atom-rel"
+  ([base-url relative-resource-url]
+   (try
+     (fhir-get-request
+       base-url
+       relative-resource-url)
+     (catch ExceptionInfo ex
+       (if (not= 404 (get-in (ex-data ex) [:object :status]))
+         (throw ex)))))
+  ([base-url type id & {:keys [version]}]
+   (let [resource-name (->fhir-resource-name type)
+         url-components (if version
+                          ["/" resource-name id "_history" version]
+                          ["/" resource-name id])]
+     (get-resource base-url (apply join-paths url-components)))))
+
+(defn get-relative-resource
+  "gets a single resource from a FHIR server. the server to be queried will be taken from the
+   'fhir-base' link in the provided bundle."
+  [bundle relative-url]
+  (if bundle
+    (let [base-url (->> (:link bundle)
+                        (filter #(= "fhir-base" (:rel %)))
+                        (first)
+                        :href)]
+      (get-resource base-url relative-url))))
 
 (defn get-resource-bundle
   "gets a single resource from a FHIR server. the returned resource will be contained in a
