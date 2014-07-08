@@ -212,7 +212,17 @@
       (apply join-paths url-components)
       (merge
         (search-params->query-map where)
-        (apply hash-map params)))))
+        (apply hash-map (if (and (seq? params)
+                                 (= 1 (count params)))
+                          (first params)
+                          params))))))
+
+(defn search-and-fetch
+  "same as search, but automatically fetches all pages of resources returning a single bundle
+   that contains all search results."
+  [base-url type where & params]
+  (fetch-all
+    (search base-url type where params)))
 
 ;(def server-url "http://fhir.healthintersections.com.au/open")
 ;(def server-url "http://spark.furore.com/fhir")
