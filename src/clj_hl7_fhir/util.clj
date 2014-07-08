@@ -8,6 +8,7 @@
 
 (def tz (TimeZone/getDefault))
 (def iso8601-timestamp "yyyy-MM-dd'T'HH:mm:ssXXX")
+(def iso8601-local-timestamp "yyyy-MM-dd'T'HH:mm:ss")
 (def iso8601-date "yyyy-MM-dd")
 
 (defn format-date [^Date date ^String format]
@@ -18,6 +19,13 @@
 
 (defn ->iso-timestamp
   "returns an ISO8601 formatted date/time string for the given date object"
+  [^Date date]
+  (format-date date iso8601-timestamp))
+
+(defn ->iso-local-timestamp
+  "returns an ISO8601 formatted date/time string for the given date object. the timestamp
+   will not include any timezone information and so is appropriate for local timezone
+   date/times only."
   [^Date date]
   (format-date date iso8601-timestamp))
 
