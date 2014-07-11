@@ -183,8 +183,13 @@
        base-url
        relative-resource-url)
      (catch ExceptionInfo ex
-       (if (not= 404 (get-in (ex-data ex) [:object :status]))
-         (throw ex)))))
+       (let [http-status (get-in (ex-data ex) [:object :status])]
+         ; TODO: do we want to handle 410 differently? either way, the resource is not available
+         ;       though, a 410 could indicate to the caller that it might be available under a
+         ;       previous version ...
+         (if-not (or (= http-status 404)
+                     (= http-status 410))
+           (throw ex))))))
   ([base-url type id & {:keys [version]}]
    (let [resource-name (->fhir-resource-name type)
          url-components (if version
