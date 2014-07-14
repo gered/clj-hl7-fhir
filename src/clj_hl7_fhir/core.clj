@@ -1,21 +1,33 @@
 (ns clj-hl7-fhir.core
   (:import (java.util Date)
            (clojure.lang ExceptionInfo))
-  (:require [clojure.string :as str])
+  (:require [clojure.string :as str]
+            [cheshire.core :as json])
   (:use [camel-snake-kebab]
         [clj-hl7-fhir.util]))
 
 (defn- ->fhir-resource-name [x]
   (name (->CamelCase x)))
 
+(defn- get-exception-fhir-body [ex]
+  (let [resp-content-type (get-in (ex-data ex) [:object :headers "Content-Type"])
+        fhir-response?    (.contains resp-content-type "application/json+fhir")]
+    (if fhir-response?
+      (json/parse-string (get-in (ex-data ex) [:object :body]) true))))
+
 (defn- fhir-request [type base-url resource-url & {:keys [params body]}]
   (let [query (map->query-string params)
         url   (build-url base-url resource-url query)]
-    (case type
-      :get    (http-get-json url)
-      :post   (http-post-json url body)
-      :put    (http-put-json url body)
-      :delete (http-delete-json url body))))
+    (try
+      (case type
+        :get    (http-get-json url)
+        :post   (http-post-json url body)
+        :put    (http-put-json url body)
+        :delete (http-delete-json url body))
+      (catch ExceptionInfo ex
+        (if-let [fhir-response (get-exception-fhir-body ex)]
+          fhir-response
+          (throw ex))))))
 
 (defn- ->search-param-name [parameter & [modifier]]
   (keyword

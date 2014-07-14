@@ -85,10 +85,22 @@
   (http-request http/get url))
 
 (defn http-post-json [url & [body]]
-  (http-request http/post url (if body {:body body})))
+  (http-request
+    http/post url
+    (merge
+      {:content-type "application/json+fhir"}
+      (cond
+        (map? body)    {:body (json/generate-string body)}
+        (string? body) {:body body}))))
 
 (defn http-put-json [url & [body]]
-  (http-request http/put url (if body {:body body})))
+  (http-request
+    http/put url
+    (merge
+      {:content-type "application/json+fhir"}
+      (cond
+        (map? body)    {:body (json/generate-string body)}
+        (string? body) {:body body}))))
 
 (defn http-delete-json [url & [body]]
   (http-request http/delete url (if body {:body body})))
