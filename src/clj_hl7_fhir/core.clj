@@ -186,6 +186,7 @@
 (defn get-resource
   "gets a single resource from a FHIR server. the raw resource itself is returned (that is,
    it is not contained in a bundle). if the resource could not be found, nil is returned.
+   for any other type of response (errors), an exception is thrown.
 
    a relative url can be used to identify the resource to be retrieved, or a resource type,
    id and optional version number can be used.
@@ -216,7 +217,8 @@
 
 (defn get-relative-resource
   "gets a single resource from a FHIR server. the server to be queried will be taken from the
-   'fhir-base' link in the provided bundle."
+   'fhir-base' link in the provided bundle. an exception is thrown if an error response is
+   received."
   [bundle relative-url]
   (if bundle
     (let [base-url (->> (:link bundle)
@@ -228,6 +230,7 @@
 (defn get-resource-bundle
   "gets a single resource from a FHIR server. the returned resource will be contained in a
    bundle. if the resource could not be found, a bundle containing zero resources is returned.
+   an exception is thrown if an error response is received.
 
   reference:
   bundles: http://hl7.org/implement/standards/fhir/extras.html#bundle"
@@ -243,7 +246,7 @@
   "searches for resources on a FHIR server. multiple parameters are ANDed together. use of the search
    operator helper functions is encouraged to ensure proper escaping/encoding of search parameters.
    the results of this function can be passed to fetch-next-page or fetch-all to collect resources
-   returned in paged search results easier
+   returned in paged search results easier. an exception is thrown if an error response is received.
 
    reference:
    search: http://hl7.org/implement/standards/fhir/http.html#search"
@@ -262,14 +265,17 @@
 
 (defn search-and-fetch
   "same as search, but automatically fetches all pages of resources returning a single bundle
-   that contains all search results."
+   that contains all search results. an exception is thrown if an error response is received."
   [base-url type where & params]
   (fetch-all
     (search base-url type where params)))
 
 (defn create
   "creates a new resource. returns the created resource if successful, throws an exception
-   otherwise."
+   otherwise.
+
+   reference:
+   create: http://hl7.org/implement/standards/fhir/http.html#create"
   [base-url type resource]
   (let [resource-name  (->fhir-resource-name type)
         uri-components ["/" resource-name]]
