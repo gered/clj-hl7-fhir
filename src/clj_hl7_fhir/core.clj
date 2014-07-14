@@ -13,11 +13,16 @@
   (let [query (map->query-string params)
         url   (build-url base-url resource-url query)]
     (try
-      (case type
-        :get    (http-get-json url)
-        :post   (http-post-json url body)
-        :put    (http-put-json url body)
-        :delete (http-delete-json url body))
+      (let [response (case type
+                       :get    (http-get-json url)
+                       :post   (http-post-json url body)
+                       :put    (http-put-json url body)
+                       :delete (http-delete-json url body))]
+        (-> (if (= 201 (:status response))
+              (http-get-json (get-in response [:headers "Location"]))
+              response)
+            :body
+            (json/parse-string true)))
       (catch ExceptionInfo ex
         (let [{:keys [status body headers]} (:object (ex-data ex))
               fhir-resource-response?       (.contains (get headers "Content-Type") "application/json+fhir")]
@@ -261,6 +266,15 @@
   [base-url type where & params]
   (fetch-all
     (search base-url type where params)))
+
+(defn create
+  [base-url type resource]
+  (let [resource-name  (->fhir-resource-name type)
+        uri-components ["/" resource-name]]
+    (fhir-request :post
+      base-url
+      (apply join-paths uri-components)
+      :body resource)))
 
 ;(def server-url "http://fhir.healthintersections.com.au/open")
 ;(def server-url "http://spark.furore.com/fhir")

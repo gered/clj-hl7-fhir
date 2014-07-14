@@ -77,9 +77,7 @@
       (str)))
 
 (defn- http-request [f url & [params]]
-  (-> (f url (merge {:accept "application/json+fhir"} params))
-      :body
-      (json/parse-string true)))
+  (f url (merge {:accept "application/json+fhir"} params)))
 
 (defn http-get-json [url]
   (http-request http/get url))
