@@ -9,12 +9,6 @@
 (defn- ->fhir-resource-name [x]
   (name (->CamelCase x)))
 
-(defn- get-exception-fhir-body [ex]
-  (let [resp-content-type (get-in (ex-data ex) [:object :headers "Content-Type"])
-        fhir-response?    (.contains resp-content-type "application/json+fhir")]
-    (if fhir-response?
-      (json/parse-string (get-in (ex-data ex) [:object :body]) true))))
-
 (defn- fhir-request [type base-url resource-url & {:keys [params body]}]
   (let [query (map->query-string params)
         url   (build-url base-url resource-url query)]
@@ -25,9 +19,15 @@
         :put    (http-put-json url body)
         :delete (http-delete-json url body))
       (catch ExceptionInfo ex
-        (if-let [fhir-response (get-exception-fhir-body ex)]
-          fhir-response
-          (throw ex))))))
+        (let [{:keys [status body headers]} (:object (ex-data ex))
+              fhir-resource-response?       (.contains (get headers "Content-Type") "application/json+fhir")]
+          (throw (ex-info (str "FHIR request failed: HTTP " status)
+                          {:status status
+                           :fhir-resource? fhir-resource-response?
+                           :response
+                            (if fhir-resource-response?
+                              (json/parse-string body true)
+                              body)})))))))
 
 (defn- ->search-param-name [parameter & [modifier]]
   (keyword
@@ -195,7 +195,7 @@
        base-url
        relative-resource-url)
      (catch ExceptionInfo ex
-       (let [http-status (get-in (ex-data ex) [:object :status])]
+       (let [http-status (:status (ex-data ex))]
          ; TODO: do we want to handle 410 differently? either way, the resource is not available
          ;       though, a 410 could indicate to the caller that it might be available under a
          ;       previous version ...
