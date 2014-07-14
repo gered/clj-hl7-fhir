@@ -286,20 +286,4 @@
 
 ;(def server-url "http://fhir.healthintersections.com.au/open")
 ;(def server-url "http://spark.furore.com/fhir")
-(def server-url "http://uhnvesb01d.uhn.on.ca:25180/hapi-fhir-jpaserver/base")
-
-;(get-resource server-url :patient 1)
-
-;(get-resource server-url :patient 181)
-
-;(search server-url :patient [(lt :birthdate "1984-12-13")])
-
-;(search server-url :patient [(eq :birthdate "1985-01-01")])
-
-;(search server-url :patient [(eq :birthdate "1925-08-27T00:00:00")])
-;(search server-url :patient [(eq :birthdate (new Date 25 7 27))])
-;(search server-url :patient [(eq :birthdate (new Date 90 0 1))])
-
-;(search server-url :patient [(eq :name "king") (eq :age 1337)])
-
-;(search-params->query-kvs [(eq :name "king") (eq :age 1337)])
+;(def server-url "http://fhirtest.uhn.ca/base")
