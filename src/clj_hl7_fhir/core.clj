@@ -284,6 +284,17 @@
       (apply join-paths uri-components)
       :body resource)))
 
+(defn update
+  [base-url type id resource  & {:keys [version]}]
+  (let [resource-name (->fhir-resource-name type)
+        uri-components (if version
+                         ["/" resource-name id "_history" version]
+                         ["/" resource-name id])]
+    (fhir-request :put
+      base-url
+      (apply join-paths uri-components)
+      :body resource)))
+
 ;(def server-url "http://fhir.healthintersections.com.au/open")
 ;(def server-url "http://spark.furore.com/fhir")
 ;(def server-url "http://fhirtest.uhn.ca/base")
