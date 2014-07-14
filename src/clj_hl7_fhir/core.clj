@@ -268,6 +268,8 @@
     (search base-url type where params)))
 
 (defn create
+  "creates a new resource. returns the created resource if successful, throws an exception
+   otherwise."
   [base-url type resource]
   (let [resource-name  (->fhir-resource-name type)
         uri-components ["/" resource-name]]
