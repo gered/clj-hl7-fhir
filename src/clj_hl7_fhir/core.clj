@@ -271,8 +271,8 @@
     (search base-url type where params)))
 
 (defn create
-  "creates a new resource. returns the created resource if successful, throws an exception
-   otherwise.
+  "creates a new resource. returns the created resource if successful and the server response
+   contained a 'Location' header, otherwise returns nil. throws an exception otherwise.
 
    reference:
    create: http://hl7.org/implement/standards/fhir/http.html#create"
@@ -285,7 +285,13 @@
       :body resource)))
 
 (defn update
-  [base-url type id resource  & {:keys [version]}]
+  "updates an existing resource. returns the updated resource if successful and the server
+   response contained a 'Location' header, otherwise returns nil. throws an exception if
+   an error response was received.
+
+   reference:
+   update: http://hl7.org/implement/standards/fhir/http.html#update"
+  [base-url type id resource & {:keys [version]}]
   (let [resource-name (->fhir-resource-name type)
         uri-components (if version
                          ["/" resource-name id "_history" version]
