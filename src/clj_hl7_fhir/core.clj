@@ -18,8 +18,8 @@
                        :post   (http-post-json url body)
                        :put    (http-put-json url body)
                        :delete (http-delete-json url body))]
-        (-> (if (= 201 (:status response))
-              (http-get-json (get-in response [:headers "Location"]))
+        (-> (if-let [location (get-in response [:headers "Location"])]
+              (http-get-json location)
               response)
             :body
             (json/parse-string true)))
