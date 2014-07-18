@@ -99,12 +99,6 @@
              (assoc m name value)))
          {})))
 
-(defn- get-bundle-next-page-url [bundle]
-  (->> (:link bundle)
-       (filter #(= "next" (:rel %)))
-       (first)
-       :href))
-
 (defn resource?
   "returns true if the given argument is an EDN representation of a FHIR resource"
   [x]
@@ -117,6 +111,16 @@
   [x]
   (and (map? x)
        (= "Bundle" (:resourceType x))))
+
+(defn validate-resource! [resource]
+  (if (and resource
+           (not (resource? resource)))
+    (throw (Exception. "Not a valid FHIR resource"))))
+
+(defn validate-bundle! [bundle]
+  (if (and bundle
+           (not (bundle? bundle)))
+    (throw (Exception. "Not a valid FHIR bundle"))))
 
 (single-search-op eq "=")
 (single-search-op lt "<")
@@ -138,9 +142,17 @@
   reference:
   bundles: http://hl7.org/implement/standards/fhir/extras.html#bundle"
   [bundle]
+  (validate-bundle! bundle)
   (->> bundle
        :entry
        (map :content)))
+
+(defn- get-bundle-next-page-url [bundle]
+  (validate-bundle! bundle)
+  (->> (:link bundle)
+       (filter #(= "next" (:rel %)))
+       (first)
+       :href))
 
 (defn fetch-next-page
   "for resources that are returned over more then one page, this will fetch the
