@@ -105,6 +105,19 @@
        (first)
        :href))
 
+(defn resource?
+  "returns true if the given argument is an EDN representation of a FHIR resource"
+  [x]
+  (and (map? x)
+       (string? (:resourceType x))
+       (not= "Bundle" (:resourceType x))))
+
+(defn bundle?
+  "returns true if the given argument is an EDN representation of a FHIR bundle"
+  [x]
+  (and (map? x)
+       (= "Bundle" (:resourceType x))))
+
 (single-search-op eq "=")
 (single-search-op lt "<")
 (single-search-op lte "<=")
@@ -277,6 +290,8 @@
    reference:
    create: http://hl7.org/implement/standards/fhir/http.html#create"
   [base-url type resource]
+  (if-not (resource? resource)
+    (throw (Exception. "Not a valid FHIR resource")))
   (let [resource-name  (->fhir-resource-name type)
         uri-components ["/" resource-name]]
     (fhir-request :post
@@ -292,6 +307,8 @@
    reference:
    update: http://hl7.org/implement/standards/fhir/http.html#update"
   [base-url type id resource & {:keys [version]}]
+  (if-not (resource? resource)
+    (throw (Exception. "Not a valid FHIR resource")))
   (let [resource-name (->fhir-resource-name type)
         uri-components (if version
                          ["/" resource-name id "_history" version]
