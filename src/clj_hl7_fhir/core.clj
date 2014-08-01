@@ -299,8 +299,11 @@
     (search base-url type where params)))
 
 (defn create
-  "creates a new resource. returns the created resource if successful and the server response
-   contained a 'Location' header, otherwise returns nil. throws an exception otherwise.
+  "creates a new resource. if the creation succeeded, then the new resource is returned,
+   unless the return-resource? argument is false, in which case the url to the new
+   resource is returned (which will contain the resource id). if a 'Location' header
+   was not set in the response, nil is returned on success. throws an exception if an
+   error was received.
 
    reference:
    create: http://hl7.org/implement/standards/fhir/http.html#create"
@@ -317,9 +320,11 @@
       :follow-location? return-resource?)))
 
 (defn update
-  "updates an existing resource. returns the updated resource if successful and the server
-   response contained a 'Location' header, otherwise returns nil. throws an exception if
-   an error response was received.
+  "updates an existing resource. if the update succeeded, then the updated resource is
+   returned, unless the return-resource? argument is false, in which case the url to
+   the updated resource is returned (which will contain the resource id and version
+   number). if a 'Location' header was not set in the response, nil is returned on
+   success. throws an exception if an error response was received.
 
    reference:
    update: http://hl7.org/implement/standards/fhir/http.html#update"
