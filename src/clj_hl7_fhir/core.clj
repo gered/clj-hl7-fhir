@@ -304,15 +304,17 @@
 
    reference:
    create: http://hl7.org/implement/standards/fhir/http.html#create"
-  [base-url type resource]
+  [base-url type resource & {:keys [return-resource?]}]
   (if-not (resource? resource)
     (throw (Exception. "Not a valid FHIR resource")))
-  (let [resource-name  (->fhir-resource-name type)
-        uri-components ["/" resource-name]]
+  (let [resource-name    (->fhir-resource-name type)
+        uri-components   ["/" resource-name]
+        return-resource? (if (nil? return-resource?) true return-resource?)]
     (fhir-request :post
       base-url
       (apply join-paths uri-components)
-      :body resource)))
+      :body resource
+      :follow-location? return-resource?)))
 
 (defn update
   "updates an existing resource. returns the updated resource if successful and the server
@@ -321,17 +323,19 @@
 
    reference:
    update: http://hl7.org/implement/standards/fhir/http.html#update"
-  [base-url type id resource & {:keys [version]}]
+  [base-url type id resource & {:keys [version return-resource?]}]
   (if-not (resource? resource)
     (throw (Exception. "Not a valid FHIR resource")))
-  (let [resource-name (->fhir-resource-name type)
-        uri-components (if version
-                         ["/" resource-name id "_history" version]
-                         ["/" resource-name id])]
+  (let [resource-name    (->fhir-resource-name type)
+        uri-components   (if version
+                           ["/" resource-name id "_history" version]
+                           ["/" resource-name id])
+        return-resource? (if (nil? return-resource?) true return-resource?)]
     (fhir-request :put
       base-url
       (apply join-paths uri-components)
-      :body resource)))
+      :body resource
+      :follow-location? return-resource?)))
 
 (defn delete
   "deletes an existing resource. returns nil on success, throws an exception if an error
