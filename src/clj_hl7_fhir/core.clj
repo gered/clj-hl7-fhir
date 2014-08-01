@@ -9,6 +9,10 @@
 (defn- ->fhir-resource-name [x]
   (name (->CamelCase x)))
 
+(defn- fhir-response? [response]
+  (and (map? response)
+       (.contains (get-in response [:headers "Content-Type"]) "application/json+fhir")))
+
 (defn- fhir-request [type base-url resource-url & {:keys [params body follow-location?]}]
   (let [query            (map->query-string params)
         url              (build-url base-url resource-url query)
@@ -19,16 +23,22 @@
                        :post   (http-post-json url body)
                        :put    (http-put-json url body)
                        :delete (http-delete-json url body))
+            body     (:body response)
             location (get-in response [:headers "Location"])]
         (if location
           (if follow-location?
             (-> (http-get-json location)
                 :body
                 (json/parse-string true))
-            location)))
+            (if (fhir-response? response)
+              (json/parse-string body true)
+              location))
+          (if (fhir-response? response)
+            (json/parse-string body true)
+            body)))
       (catch ExceptionInfo ex
-        (let [{:keys [status body headers]} (:object (ex-data ex))
-              fhir-resource-response?       (.contains (get headers "Content-Type") "application/json+fhir")]
+        (let [{:keys [status body] :as response} (:object (ex-data ex))
+              fhir-resource-response?            (fhir-response? response)]
           (throw (ex-info (str "FHIR request failed: HTTP " status)
                           {:status status
                            :fhir-resource? fhir-resource-response?
