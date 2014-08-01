@@ -330,6 +330,19 @@
       (apply join-paths uri-components)
       :body resource)))
 
+(defn delete
+  "deletes an existing resource. returns nil on success, throws an exception if an error
+   response was received.
+
+   reference:
+   delete: http://hl7.org/implement/standards/fhir/http.html#delete"
+  [base-url type id]
+  (let [resource-name  (->fhir-resource-name type)
+        uri-components ["/" resource-name id]]
+    (fhir-request :delete
+      base-url
+      (apply join-paths uri-components))))
+
 ;(def server-url "http://fhir.healthintersections.com.au/open")
 ;(def server-url "http://spark.furore.com/fhir")
 ;(def server-url "http://fhirtest.uhn.ca/base")
