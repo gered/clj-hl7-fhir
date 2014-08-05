@@ -53,6 +53,23 @@ All of the functions that wrap FHIR API calls are located in `clj-hl7-fhir.core`
 (use 'clj-hl7-fhir.core)
 ```
 
+### General Concepts
+
+Most API functions take a `type` parameter which should be either a keyword or string
+specifying the [FHIR resource](http://hl7.org/implement/standards/fhir/resourcelist.html) 
+that the operation is dealing with. The resource can be specified either in "camel case"
+(e.g. `"Patient"` or `"DiagnosticReport"`) or in "kebab case", which is what most Clojure
+code uses (e.g. `:patient` or `:diagnostic-report`). FHIR servers will typically return
+an error if you pass in a resource type that is not recognized.
+
+Return values will almost always (if not nil) be a FHIR resource or bundle ([as described here](http://hl7.org/implement/standards/fhir/json.html).
+The main difference is that a bundle can contain any number of resources (even zero) and 
+also contains a bit of extra metadata about each resource contained inside. The functions
+which return resources as bundles will always return a bundle as long as an error did
+not occur, however the bundle may contain zero resources. The functions which return
+raw resources will either return a resource or nil on success. Exceptions to this
+will be noted in the individual function documentation (e.g. `create` and `update`).
+
 ### base-url
 
 All core API functions take a `base-url` parameter. This is the [Service Root URL](http://hl7.org/implement/standards/fhir/http.html#root)
