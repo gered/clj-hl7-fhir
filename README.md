@@ -199,10 +199,10 @@ using the helper functions:
 | `gte` | Greater then or equal to<br />`(gte :date "2013-08-15")`
 | `between` | Between<br />`(between :date "2013-01-01" "2013-12-31")`
 
-_Note that you can also use a plain old string for parameter names instead of keywords if you wish_
+_Note that you can also use a plain old string for parameter names instead of keywords if you wish._
 
-If a parameter value needs to include a namespace, you can use the `namespace` helper to help properly
-encode this information in the search parameters:
+If a parameter value needs to include a namespace, you can use the `namespaced` helper function 
+to properly encode this information in the search parameters:
 
 ```clojure
 (eq :gender (namespaced "http://hl7.org/fhir/v3/AdministrativeGender" "M"))
