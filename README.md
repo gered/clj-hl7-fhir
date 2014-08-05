@@ -359,6 +359,28 @@ contains a `:resourceType` key with a value that is anything other then `"Bundle
 ;       function for more information
 ```
 
+### delete
+
+Deleting existing resources is accomplished with `delete` which takes the ID of the
+resource to be deleted. The return value will typically be `nil` on success, though
+some servers may return an OperationOutcome resource that includes more details about
+the successful deletion.
+
+##### Examples
+
+```clojure
+; delete an existing patient
+(delete server-url :patient 1654)
+=> nil
+
+; try to delete the same patient again. nothing happens
+(delete server-url :patient 1654)
+=> nil
+
+; try to delete a non-existant patient
+(delete server-url :patient 9001)
+ExceptionInfo FHIR request failed: HTTP 404
+```
 
 ### Error Handling
 
