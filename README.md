@@ -1,13 +1,244 @@
 # clj-hl7-fhir
 
 [HL7 FHIR](http://hl7.org/implement/standards/fhir/) JSON client for use in Clojure applications.
+This is a fairly low-level wrapper over the HL7 FHIR [RESTful API](http://hl7.org/implement/standards/fhir/http.html)
+and does _not_ include any model classes (or anything of the sort) for the various HL7 resources.
+FHIR API calls wrapped by this library work with JSON data represented as Clojure EDN data.
 
-**This library should not even be considered in an "alpha" state yet. Caution is advised if
-you are looking to use this for real-world use right now. Stay tuned!**
+The primary goal of clj-hl7-fhir is to make getting data into and out of an HL7 FHIR server as
+simple as possible, without needing to know much about the RESTful API (the URL conventions working 
+with HTTP status codes, reading back data from paged bundles, encoding search parameters, etc). 
+How you create and/or read the HL7 data and what you do with it is beyond the scope of this library.
 
+## Leiningen
+
+	[clj-hl7-fhir "0.1"]
+	
+## TODO
+
+This library is still early along in development, and some important features are missing at the moment:
+
+* Authentication support
+* Remaining API calls
+  * [history](http://hl7.org/implement/standards/fhir/http.html#history)
+  * [validate](http://hl7.org/implement/standards/fhir/http.html#validate)
+  * [transaction](http://hl7.org/implement/standards/fhir/http.html#transaction)
+  * [conformance](http://hl7.org/implement/standards/fhir/http.html#conformance)
+	
 ## Usage
 
-FIXME
+Most of the basic RESTful API operations are supported currently.
+
+* [read](http://hl7.org/implement/standards/fhir/http.html#read)
+* [vread](http://hl7.org/implement/standards/fhir/http.html#vread)
+* [search](http://hl7.org/implement/standards/fhir/http.html#search)
+* [create](http://hl7.org/implement/standards/fhir/http.html#create)
+* [update](http://hl7.org/implement/standards/fhir/http.html#update)
+* [delete](http://hl7.org/implement/standards/fhir/http.html#delete)
+
+All of the functions that wrap FHIR API calls are located in `clj-hl7-fhir.core`:
+
+```clojure
+(use 'clj-hl7-fhir.core)
+```
+
+### base-url
+
+All core API functions take a `base-url` parameter. This is the [Service Root URL](http://hl7.org/implement/standards/fhir/http.html#root)
+for which all API calls are made to.
+
+For example, to use [UHN's HAPI FHIR test server](http://fhirtest.uhn.ca/):
+
+```clojure
+(def server-url "http://fhirtest.uhn.ca/base")
+```
+
+### read / vread
+
+There are a couple options for reading single resources by ID. 
+
+`get-resource` takes the resource type and ID and returns a FHIR resource. 
+Alternatively, you can specify a relative resource URL instead of separate type
+and ID arguments. You can also optionally include a specific version number to
+retrieve.
+
+`get-resource-bundle` works similarly to `get-resource`, except that it returns
+a FHIR [bundle](http://www.hl7.org/implement/standards/fhir/extras.html#bundle) 
+instead of a resource.
+
+#### Examples
+
+```clojure
+; reading a single resource by ID
+(get-resource server-url :patient 37)
+=> {:address
+    [{:use "home"
+      :line ["10 Duxon Street"]
+      :city "VICTORIA"
+      :state "BC"
+      :zip "V8N 1Y4"
+      :country "Can"}]
+    :managingOrganization {:resource "Organization/1.3.6.1.4.1.12201"}
+    :name [{:family ["Duck"] 
+            :given ["Donald"]}]
+    :birthDate "1980-06-01T00:00:00"
+    :resourceType "Patient"
+    :identifier
+    [{:use "official"
+      :label "UHN MRN 7000135"
+      :system "urn:oid:2.16.840.1.113883.3.239.18.148"
+      :value "7000135"
+      :assigner {:resource "Organization/1.3.6.1.4.1.12201"}}]
+    :telecom
+    [{:system "phone" :use "home"}
+     {:system "phone" :use "work"}
+     {:system "phone" :use "mobile"}
+     {:system "email" :use "home"}]
+    :gender
+    {:coding
+     [{:system "http://hl7.org/fhir/v3/AdministrativeGender"
+       :code "M"}]}
+    :text
+    {:status "generated"
+     :div
+     "<div><div class=\"hapiHeaderText\"> Donald <b>DUCK </b></div><table class=\"hapiPropertyTable\"><tbody><tr><td>Identifier</td><td>UHN MRN 7000135</td></tr><tr><td>Address</td><td><span>10 Duxon Street </span><br/><span>VICTORIA </span><span>BC </span><span>Can </span></td></tr><tr><td>Date of birth</td><td><span>01 June 1980</span></td></tr></tbody></table></div>"}}
+     
+; trying to read a non-existant resource
+(get-resource server-url :patient 9001)
+=> nil
+
+; reading a specific version of a resource
+(get-resource server-url :patient 1654 :version 3)
+=> { 
+    ; ... similar to the above example resource return value ... 
+    }
+
+; trying to read an invalid resource
+(get-resource server-url :foobar 42)
+ExceptionInfo FHIR request failed: HTTP 400  clojure.core/ex-info (core.clj:4403)
+```
+
+### search
+
+Searching for resources is performed via `search`. It returns a FHIR bundle containing
+all the resources that matched the search parameters given. If you provide no search
+parameters then all resources of the type given will be returned (though they will
+be paged likely, as per the FHIR specs).
+
+Search parameters are specified as a vector, where each parameter should be defined
+using the helper functions:
+
+| Helper function | Description and usage example
+| ----------------|------------------------------
+| `eq` | Equals<br />`(eq :name "smith")`
+| `lt` | Less then<br />`(lt :value 10)`
+| `lte` | Less then or equal to<br />`(lte :date "2013-08-15")`
+| `gt` | Greater then<br />`(gt :value 10)`
+| `gte` | Greater then or equal to<br />`(gte :date "2013-08-15")`
+| `between` | Between<br />`(between :date "2013-01-01" "2013-12-31")`
+
+_Note that you can also use a plain old string for parameter names instead of keywords if you wish_
+
+If a parameter value needs to include a namespace, you can use the `namespace` helper to help properly
+encode this information in the search parameters:
+
+```clojure
+(eq :gender (namespaced "http://hl7.org/fhir/v3/AdministrativeGender" "M"))
+```
+
+There are also a few helper functions in `clj-hl7-fhir.util` for converting `java.util.Date` objects
+into properly formatted ISO date/time strings that match FHIR specifications:
+
+| Function | Example output
+|----------|---------------
+| `->timestamp` | `2014-08-05T10:49:37-04:00`
+| `->local-timestamp` | `2014-08-05T10:49:37-04:00`
+| `->date` | `2014-08-05`
+
+As mentioned above, search results will be returned in a FHIR bundle, which contains a
+vector of all the matching resources. For convenience, you can use `collect-resources`
+to return a sequence of just the resources by passing/threading the results from
+`search` into this function.
+
+```clojure
+(collect-resources
+  (search server-url ...)
+```
+
+Larger search results will be [paged](http://hl7.org/implement/standards/fhir/http.html#paging).
+Some helper functions are available to make working with paged search results easier:
+* `fetch-next-page` takes a search result bundle and uses it to get and return the next page of search results. If there are no more pages of results, returns nil.
+* `fetch-all` takes a search result bundle, and fetches all pages of search results, and then returns a bundle which contains the full list of match resources.
+* `search-and-fetch` convenience function that is the same as doing: `(fetch-all (search ...))`. Takes the same arguments as `search`.
+
+##### Examples
+
+```clojure
+; list all patients
+; (http://server-url/Patient)
+(search server-url :patient [])
+
+; find all patients with name "dogie"
+; (http://server-url/Patient?name=dogie)
+(search server-url :patient [(eq :name "dogie")])
+
+; find all female patients
+; (http://server-url/Patient?gender=http%3A%2F%2Fhl7.org%2Ffhir%2Fv3%2FAdministrativeGender%7CF)
+(search server-url :patient [(eq :gender (namespaced "http://hl7.org/fhir/v3/AdministrativeGender" "F"))])
+
+; also works (depending on the exact data and server spec compliance)
+; (http://server-url/Patient?gender=F)
+(search server-url :patient [(eq :gender "F")])
+
+; find all male patients with a birthdate before Jan 1, 1980
+; (http://server-url/Patient?birthdate=%3C1980-01-01&gender=M)
+(search server-url :patient [(eq :gender "M")
+                             (lt :birthdate "1980-01-01")])
+
+; search using an invalid parameter (unrecognized by the server)
+; (http://server-url/Patient?foobar=baz)
+(search server-url :patient [(eq :foobar "baz")])
+ExceptionInfo FHIR request failed: HTTP 400  clojure.core/ex-info (core.clj:4403)
+```
+
+### Error Handling
+
+All API functions throw exceptions via `ex-info` when an unexpected error response is
+returned from the HL7 FHIR server. An "unexpected error response" is anything that
+is not defined to be part of the particular operation's successful result(s). e.g.
+a "read" operation that returns an HTTP 400 or HTTP 500 status instead of HTTP 200.
+
+When this type of response is encountered, an exception is thrown which will contain
+the response, which can be obtained in your exception handler via `ex-data`. If the
+response is detected to be a FHIR [OperationOutcome](http://www.hl7.org/implement/standards/fhir/operationoutcome.html)
+resource, it will be parsed and set as the response, otherwise the raw response body 
+is set in the exception.
+
+```clojure
+; trying to read an invalid resource
+(get-resource server-url :foobar 42)
+ExceptionInfo FHIR request failed: HTTP 400  clojure.core/ex-info (core.clj:4403)
+
+; more detailed error information can be obtained via ex-data
+(try
+  (get-resource server-url :foobar 42)
+  (catch Exception e
+    (let [operation-outcome (ex-data e)]
+      ; TODO: proper error handling goes here
+      operation-outcome)))
+=> {:status 400
+    :fhir-resource? true
+    :response
+    {:resourceType "OperationOutcome"
+     :text
+     {:status "empty"
+      :div
+      "<div>No narrative template available for resource profile: http://hl7.org/fhir/profiles/OperationOutcome</div>"}
+     :issue
+     [{:severity "error"
+       :details
+       "Unknown resource type 'Foobar' - Server knows how to handle: [User, Condition, Supply, GVFVariant, Organization, Group, ValueSet, Coverage, ImmunizationRecommendation, Appointment, MedicationDispense, MedicationPrescription, Slot, AppointmentResponse, MedicationStatement, SequencingLab, Questionnaire, Composition, OperationOutcome, Conformance, Media, Other, Profile, DocumentReference, Immunization, Microarray, OrderResponse, ConceptMap, Practitioner, ImagingStudy, GVFMeta, CarePlan, Provenance, Device, Query, Order, Procedure, Substance, DiagnosticReport, Medication, MessageHeader, DocumentManifest, Availability, MedicationAdministration, Encounter, SecurityEvent, GeneExpression, SequencingAnalysis, List, DeviceObservationReport, Claim, FamilyHistory, Location, AllergyIntolerance, GeneticAnalysis, Observation, RelatedPerson, Specimen, Alert, Patient, Remittance, AdverseReaction, DiagnosticOrder]"}]}}
+```
 
 ## License
 
