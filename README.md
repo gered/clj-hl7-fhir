@@ -115,7 +115,7 @@ instead of a resource.
 
 ; trying to read an invalid resource
 (get-resource server-url :foobar 42)
-ExceptionInfo FHIR request failed: HTTP 400  clojure.core/ex-info (core.clj:4403)
+ExceptionInfo FHIR request failed: HTTP 400
 ```
 
 ### search
@@ -195,16 +195,16 @@ Some helper functions are available to make working with paged search results ea
 (search server-url :patient [(eq :gender "M")
                              (lt :birthdate "1980-01-01")])
                              
-; find all encounter (visit) resources for a patient specified by identifier (MRN in this case)
+; find all encounter (visit) resources for a patient specified by 
+; identifier (MRN in this case)
 ; (http://server-url/Encounter?subject.identifier=7007482)
 (search server-url :encounter [(eq :subject.identifier "7007482")])
 
 ; search using an invalid parameter (unrecognized by the server)
 ; (http://server-url/Patient?foobar=baz)
 (search server-url :patient [(eq :foobar "baz")])
-ExceptionInfo FHIR request failed: HTTP 400  clojure.core/ex-info (core.clj:4403)
+ExceptionInfo FHIR request failed: HTTP 400
 ```
-
 
 ### create
 
@@ -245,9 +245,9 @@ a `:resourceType` key with a value that is anything other then `"Bundle"`).
       :code "F"}]}
    :text {:div "<div/>"}}
 
-; create a new resource. will return a map that should look almost identical to the above
-; (some servers may autogenerate the :text :div value, if so that value will be included
-; in the returned map of course)
+; create a new resource. will return a map that should look almost identical to the 
+; above (some servers may autogenerate the :text :div value, if so that value will 
+; be included in the returned map of course)
 (create server-url :patient new-patient)
 => {
     ; resource
@@ -255,19 +255,19 @@ a `:resourceType` key with a value that is anything other then `"Bundle"`).
 
 ; create a new resource, but only return the URL to the created resource
 (create server-url :patient new-patient :return-resource? false)
-=> http://server-url/Patient/1234/_history/1
+=> "http://server-url/Patient/1234/_history/1"
 
 ; trying to create a resource with an invalid resource map
 (create server-url :patient {:foo "bar"})
-Exception Not a valid FHIR resource  clj-hl7-fhir.core/create (core.clj:321)
+Exception Not a valid FHIR resource 
 
 ; trying to create a resource that the server rejects
-; (exact HTTP status returned may vary from server to server unfortunately! some servers do validation
-; better then others and may return an HTTP 400 instead. HTTP 422 is another result defined in the spec
-; for an invalid/unusable resource)
+; (exact HTTP status returned may vary from server to server unfortunately! some 
+; servers do validation better then others and may return an HTTP 400 instead. 
+; HTTP 422 is another result defined in the spec for an invalid/unusable resource)
 (create server-url :patient {:resourceType "foobar" 
                              :foo "bar"})
-ExceptionInfo FHIR request failed: HTTP 500  clojure.core/ex-info (core.clj:4403)
+ExceptionInfo FHIR request failed: HTTP 500
 ```
 
 ### update
@@ -290,6 +290,8 @@ is thrown.
 
 `update` will throw an exception if the resource you pass in is not a Clojure map that 
 contains a `:resourceType` key with a value that is anything other then `"Bundle"`).
+
+##### Examples
 
 ```clojure
 (def updated-patient
@@ -315,9 +317,9 @@ contains a `:resourceType` key with a value that is anything other then `"Bundle
       :code "F"}]}
    :text {:div "<div/>"}}
 
-; updates an existing resource. will return a map that should look almost identical to the above
-; (some servers may autogenerate the :text :div value, if so that value will be included
-; in the returned map of course)
+; updates an existing resource. will return a map that should look almost identical to the 
+; above (some servers may autogenerate the :text :div value, if so that value will be 
+; included in the returned map of course)
 (update server-url :patient 1234 updated-patient)
 => {
     ; resource
@@ -325,7 +327,7 @@ contains a `:resourceType` key with a value that is anything other then `"Bundle
 
 ; updates an existing resource, but only return the URL to the updated resource
 (update server-url :patient 1234 updated-patient)
-=> http://server-url/Patient/1234/_history/2
+=> "http://server-url/Patient/1234/_history/2"
 
 ; update an existing resource only if the version matches
 (update server-url :patient 1234 updated-patient :version 1)
@@ -336,9 +338,6 @@ contains a `:resourceType` key with a value that is anything other then `"Bundle
 ; NOTE: error responses are identical to clj-hl7-fhir.core/create. see examples for that
 ;       function for more information
 ```
-
-
-##### Examples
 
 
 ### Error Handling
