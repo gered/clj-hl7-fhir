@@ -66,6 +66,29 @@ retrieve.
 a FHIR [bundle](http://www.hl7.org/implement/standards/fhir/extras.html#bundle) 
 instead of a resource.
 
+##### Reading via Relative URLs
+
+Many FHIR resources will link to other resources using relative URLs. For example,
+an Encounter resource is associated with a Patient resource and the link is
+specified like so:
+
+```clojure
+{:resourceType "Encounter"
+
+ ; ...
+ 
+ :subject {:resource "Patient/1234"}
+ 
+ ; ...
+ 
+ }
+```
+
+Where `Patient/1234` is a [relative URL](http://www.hl7.org/implement/standards/fhir/references.html#atom-rel). 
+`get-resource` can also accept a relative URL instead of the resource type and ID arguments.
+This can sometimes be more convenient when reading resources related to a parent resource
+that has already been retrieved.
+
 ##### Examples
 
 ```clojure
@@ -111,6 +134,13 @@ instead of a resource.
 (get-resource server-url :patient 1654 :version 3)
 => { 
     ; ... similar to the above example resource return value ... 
+    }
+
+; reading a resource via relative URL (this was taken from the 
+; patient resource retrieved above)
+(get-resource server-url "Organization/1.3.6.1.4.1.12201")
+=> {:resourceType "Organization"
+    ; ... full resource contents ommitted ...
     }
 
 ; trying to read an invalid resource
