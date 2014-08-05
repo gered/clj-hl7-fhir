@@ -12,7 +12,9 @@ How you create and/or read the HL7 data and what you do with it is beyond the sc
 
 ## Leiningen
 
-	[clj-hl7-fhir "0.1"]
+```clojure
+[clj-hl7-fhir "0.1"]
+```
 	
 ## TODO
 
