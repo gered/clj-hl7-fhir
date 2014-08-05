@@ -365,6 +365,24 @@
       base-url
       (apply join-paths uri-components))))
 
+(defn deleted?
+  [base-url type id]
+  (let [resource-name  (->fhir-resource-name type)
+        url-components ["/" resource-name id]
+        relative-url   (apply join-paths url-components)]
+    (try
+      (fhir-request :get
+                    base-url
+                    relative-url)
+      ; not deleted
+      false
+      (catch ExceptionInfo ex
+        (let [http-status (:status (ex-data ex))]
+          (cond
+            (= http-status 410) true
+            (= http-status 404) false
+            :else               (throw ex)))))))
+
 ;(def server-url "http://fhir.healthintersections.com.au/open")
 ;(def server-url "http://spark.furore.com/fhir")
 ;(def server-url "http://fhirtest.uhn.ca/base")

@@ -426,6 +426,11 @@ resource to be deleted. The return value will typically be `nil` on success, tho
 some servers may return an OperationOutcome resource that includes more details about
 the successful deletion.
 
+You can use the helper function `deleted?` to determine if a resource has been deleted
+or not, since `get-resource` returns nil for both deleted resources and resources
+which do not exist at all (an important distinction, as in FHIR a deleted resource
+technically still exists under previous version numbers).
+
 ##### Examples
 
 ```clojure
@@ -440,6 +445,14 @@ the successful deletion.
 ; try to delete a non-existant patient
 (delete server-url :patient 9001)
 => ExceptionInfo FHIR request failed: HTTP 404
+
+; testing if a resource has been deleted or not
+(deleted? server-url :patient 1654)
+=> true
+
+; testing if a non-existant resource has been deleted
+(deleted? server-url :patient 9001)
+=> false
 ```
 
 ### Error Handling
