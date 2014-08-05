@@ -64,7 +64,7 @@ that the operation is dealing with. The resource can be specified either in "cam
 code uses (e.g. `:patient` or `:diagnostic-report`). FHIR servers will typically return
 an error if you pass in a resource type that is not recognized.
 
-Return values will almost always (if not nil) be a FHIR resource or bundle ([as described here](http://hl7.org/implement/standards/fhir/json.html).
+Return values will almost always (if not nil) be a FHIR resource or bundle ([as described here](http://hl7.org/implement/standards/fhir/json.html)).
 The main difference is that a bundle can contain any number of resources (even zero) and 
 also contains a bit of extra metadata about each resource contained inside. The functions
 which return resources as bundles will always return a bundle as long as an error did
