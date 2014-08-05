@@ -115,7 +115,7 @@ instead of a resource.
 
 ; trying to read an invalid resource
 (get-resource server-url :foobar 42)
-ExceptionInfo FHIR request failed: HTTP 400
+=> ExceptionInfo FHIR request failed: HTTP 400
 ```
 
 ### search
@@ -224,7 +224,7 @@ you specify here.
 ; search using an invalid parameter (unrecognized by the server)
 ; (http://server-url/Patient?foobar=baz)
 (search server-url :patient [(eq :foobar "baz")])
-ExceptionInfo FHIR request failed: HTTP 400
+=> ExceptionInfo FHIR request failed: HTTP 400
 ```
 
 ### create
@@ -280,7 +280,7 @@ a `:resourceType` key with a value that is anything other then `"Bundle"`).
 
 ; trying to create a resource with an invalid resource map
 (create server-url :patient {:foo "bar"})
-Exception Not a valid FHIR resource 
+=> Exception Not a valid FHIR resource 
 
 ; trying to create a resource that the server rejects
 ; (exact HTTP status returned may vary from server to server unfortunately! some 
@@ -288,7 +288,7 @@ Exception Not a valid FHIR resource
 ; HTTP 422 is another result defined in the spec for an invalid/unusable resource)
 (create server-url :patient {:resourceType "foobar" 
                              :foo "bar"})
-ExceptionInfo FHIR request failed: HTTP 500
+=> ExceptionInfo FHIR request failed: HTTP 500
 ```
 
 ### update
@@ -379,7 +379,7 @@ the successful deletion.
 
 ; try to delete a non-existant patient
 (delete server-url :patient 9001)
-ExceptionInfo FHIR request failed: HTTP 404
+=> ExceptionInfo FHIR request failed: HTTP 404
 ```
 
 ### Error Handling
@@ -398,7 +398,7 @@ is set in the exception.
 ```clojure
 ; trying to read an invalid resource
 (get-resource server-url :foobar 42)
-ExceptionInfo FHIR request failed: HTTP 400  clojure.core/ex-info (core.clj:4403)
+=> ExceptionInfo FHIR request failed: HTTP 400
 
 ; more detailed error information can be obtained via ex-data
 (try
