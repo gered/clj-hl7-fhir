@@ -24,6 +24,17 @@ This library is still early along in development, and some important features ar
   * [validate](http://hl7.org/implement/standards/fhir/http.html#validate)
   * [transaction](http://hl7.org/implement/standards/fhir/http.html#transaction)
   * [conformance](http://hl7.org/implement/standards/fhir/http.html#conformance)
+  
+## Limitations
+
+This library only supports HL7 FHIR servers which support JSON. The FHIR specification requires that
+servers support XML, but JSON support is optional. There are no immediate or long-term plans to add
+XML support to this library.
+
+All API requests sent by this library include an `Accept` HTTP header with the value
+`application/json+fhir` to indicate to the server what format requests and responses
+are to be in. This is handled automatically, and does not need to be specified by
+your application's code. As a result the optional `_format` parameter is not needed.
 	
 ## Usage
 
