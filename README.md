@@ -125,6 +125,8 @@ all the resources that matched the search parameters given. If you provide no se
 parameters then all resources of the type given will be returned (though they will
 be paged likely, as per the FHIR specs).
 
+##### Search Parameters
+
 Search parameters are specified as a vector, where each parameter should be defined
 using the helper functions:
 
@@ -146,14 +148,18 @@ encode this information in the search parameters:
 (eq :gender (namespaced "http://hl7.org/fhir/v3/AdministrativeGender" "M"))
 ```
 
+###### Date Parameter Formatting
+
 There are also a few helper functions in `clj-hl7-fhir.util` for converting `java.util.Date` objects
 into properly formatted ISO date/time strings that match FHIR specifications:
 
-| Function | Example output
-|----------|---------------
-| `->timestamp` | `2014-08-05T10:49:37-04:00`
-| `->local-timestamp` | `2014-08-05T10:49:37-04:00`
-| `->date` | `2014-08-05`
+| Function | Format | Example output
+|----------|--------|---------------
+| `->timestamp` | `yyyy-MM-dd'T'HH:mm:ssXXX` | `2014-08-05T10:49:37-04:00`
+| `->local-timestamp` | `yyyy-MM-dd'T'HH:mm:ss` | `2014-08-05T10:49:37-04:00`
+| `->date` | `yyyy-MM-dd` | `2014-08-05`
+
+##### Search Results
 
 As mentioned above, search results will be returned in a FHIR bundle, which contains a
 vector of all the matching resources. For convenience, you can use `collect-resources`
@@ -165,11 +171,19 @@ to return a sequence of just the resources by passing/threading the results from
   (search server-url ...)
 ```
 
+##### Paged Results
+
 Larger search results will be [paged](http://hl7.org/implement/standards/fhir/http.html#paging).
 Some helper functions are available to make working with paged search results easier:
 * `fetch-next-page` takes a search result bundle and uses it to get and return the next page of search results. If there are no more pages of results, returns nil.
 * `fetch-all` takes a search result bundle, and fetches all pages of search results, and then returns a bundle which contains the full list of match resources.
 * `search-and-fetch` convenience function that is the same as doing: `(fetch-all (search ...))`. Takes the same arguments as `search`.
+
+If you wish, you can specify `:_count max-results` in your call to `search` to specify an
+arbitrary number of results per page. As per the FHIR specifications, the server is free to
+return less then this number if it chooses to, but it will never return more then the amount
+you specify here.
+
 
 ##### Examples
 
@@ -177,6 +191,13 @@ Some helper functions are available to make working with paged search results ea
 ; list all patients
 ; (http://server-url/Patient)
 (search server-url :patient [])
+
+; list all patients, but only show 5 per page of results.
+; note that the above call (that does not specify a count) will also be paged too if
+; there are a lot of results. the count parameter just lets you change the number of
+; results per page to something else, it doesn't necessarily let you turn off paging.
+; (http://fhirtest.uhn.ca/base/Patient?_count=5)
+(search server-url :patient [] :_count 5)
 
 ; find all patients with name "dogie"
 ; (http://server-url/Patient?name=dogie)
@@ -209,14 +230,14 @@ ExceptionInfo FHIR request failed: HTTP 400
 ### create
 
 Adding new resources is a simple matter once you have a FHIR resource represented as a Clojure map.
-Simply pass the resource to `create`. By default, if creation is successful, the new resource is
+Simply pass the resource to `create`. By default, if creation is successful the new resource is
 returned. 
 
-Optionally, you can specify an additional `:return-resource? false` to return a full
-URL to the newly created resource instead (this can be useful if you need the new resource's
-ID for example, as the returned FHIR resource would not include this information).
+Optionally you can specify `:return-resource? false` to have `create` return a full URL to the 
+newly created resource instead (this can be useful if you need the new resource's ID for example,
+as the returned FHIR resource would not otherwise include this information).
 
-`create` will throw an exception if the resource you pass in is not a Clojure map that contains
+`create` will throw an exception if the resource you pass is not a Clojure map that contains
 a `:resourceType` key with a value that is anything other then `"Bundle"`).
 
 ##### Examples
@@ -274,21 +295,20 @@ ExceptionInfo FHIR request failed: HTTP 500
 
 Updating existing resources is accomplished via `update` which takes an ID along with
 a FHIR resource map, similar to what you would provide with `create`. The ID of course
-specifies the existing resource to be update. By default, if the update is successful, 
+specifies the existing resource to be updated. By default, if the update is successful 
 the newly updated resource is returned.
 
-Optionally, you can specify an additional `:return-resource? false` to return a full
-URL to the updated resource instead (this can be useful if you need the resource's
-ID/version for example, as the returned FHIR resource would not include this 
+Optionally you can specify `:return-resource? false` to return a full URL to the 
+updated resource instead (this can be useful if you need the resource's ID/version 
+for example, as the returned FHIR resource would not otherwise include this 
 information).
 
 Additionally, you can limit updates to only proceed if the latest version of the
-resource on the server matches a version number you specify by passing an
-extra `:version [version-number]` argument. If the latest version of the resource
-on the server does not match, the resource will not be updated and an exception
-is thrown.
+resource on the server matches a version number you specify by passing an extra 
+`:version version-number` argument. If the latest version of the resource on the 
+server does not match, the resource will not be updated and an exception is thrown.
 
-`update` will throw an exception if the resource you pass in is not a Clojure map that 
+`update` will throw an exception if the resource you pass is not a Clojure map that 
 contains a `:resourceType` key with a value that is anything other then `"Bundle"`).
 
 ##### Examples
@@ -308,7 +328,7 @@ contains a `:resourceType` key with a value that is anything other then `"Bundle
      :label "University Health Network MRN 7010168"}]
    :telecom
    [{:system "phone" :use "home" :value "(416)000-0000"}
-    {:system "phone" :use "work" :value "555-555-5555}
+    {:system "phone" :use "work" :value "555-555-5555"}
     {:system "phone" :use "mobile"}
     {:system "email" :use "home"}]
    :gender
