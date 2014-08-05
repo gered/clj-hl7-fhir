@@ -66,7 +66,7 @@ retrieve.
 a FHIR [bundle](http://www.hl7.org/implement/standards/fhir/extras.html#bundle) 
 instead of a resource.
 
-#### Examples
+##### Examples
 
 ```clojure
 ; reading a single resource by ID
@@ -194,12 +194,152 @@ Some helper functions are available to make working with paged search results ea
 ; (http://server-url/Patient?birthdate=%3C1980-01-01&gender=M)
 (search server-url :patient [(eq :gender "M")
                              (lt :birthdate "1980-01-01")])
+                             
+; find all encounter (visit) resources for a patient specified by identifier (MRN in this case)
+; (http://server-url/Encounter?subject.identifier=7007482)
+(search server-url :encounter [(eq :subject.identifier "7007482")])
 
 ; search using an invalid parameter (unrecognized by the server)
 ; (http://server-url/Patient?foobar=baz)
 (search server-url :patient [(eq :foobar "baz")])
 ExceptionInfo FHIR request failed: HTTP 400  clojure.core/ex-info (core.clj:4403)
 ```
+
+
+### create
+
+Adding new resources is a simple matter once you have a FHIR resource represented as a Clojure map.
+Simply pass the resource to `create`. By default, if creation is successful, the new resource is
+returned. 
+
+Optionally, you can specify an additional `:return-resource? false` to return a full
+URL to the newly created resource instead (this can be useful if you need the new resource's
+ID for example, as the returned FHIR resource would not include this information).
+
+`create` will throw an exception if the resource you pass in is not a Clojure map that contains
+a `:resourceType` key with a value that is anything other then `"Bundle"`).
+
+##### Examples
+
+```clojure
+(def new-patient
+  {:managingOrganization {:resource "Organization/1.3.6.1.4.1.12201"}
+   :name [{:given ["Nurse"]
+           :family ["Test"]}]
+   :birthDate "1965-11-19T00:00:00-05:00"
+   :resourceType "Patient"
+   :identifier
+   [{:assigner {:resource "Organization/1.3.6.1.4.1.12201"}
+     :system "urn:oid:2.16.840.1.113883.3.239.18.148"
+     :use "official"
+     :value "7010168"
+     :label "University Health Network MRN 7010168"}]
+   :telecom
+   [{:system "phone" :use "home" :value "(416)000-0000"}
+    {:system "phone" :use "work"}
+    {:system "phone" :use "mobile"}
+    {:system "email" :use "home"}]
+   :gender
+   {:coding
+    [{:system "http://hl7.org/fhir/v3/AdministrativeGender"
+      :code "F"}]}
+   :text {:div "<div/>"}}
+
+; create a new resource. will return a map that should look almost identical to the above
+; (some servers may autogenerate the :text :div value, if so that value will be included
+; in the returned map of course)
+(create server-url :patient new-patient)
+=> {
+    ; resource
+    } 
+
+; create a new resource, but only return the URL to the created resource
+(create server-url :patient new-patient :return-resource? false)
+=> http://server-url/Patient/1234/_history/1
+
+; trying to create a resource with an invalid resource map
+(create server-url :patient {:foo "bar"})
+Exception Not a valid FHIR resource  clj-hl7-fhir.core/create (core.clj:321)
+
+; trying to create a resource that the server rejects
+; (exact HTTP status returned may vary from server to server unfortunately! some servers do validation
+; better then others and may return an HTTP 400 instead. HTTP 422 is another result defined in the spec
+; for an invalid/unusable resource)
+(create server-url :patient {:resourceType "foobar" 
+                             :foo "bar"})
+ExceptionInfo FHIR request failed: HTTP 500  clojure.core/ex-info (core.clj:4403)
+```
+
+### update
+
+Updating existing resources is accomplished via `update` which takes an ID along with
+a FHIR resource map, similar to what you would provide with `create`. The ID of course
+specifies the existing resource to be update. By default, if the update is successful, 
+the newly updated resource is returned.
+
+Optionally, you can specify an additional `:return-resource? false` to return a full
+URL to the updated resource instead (this can be useful if you need the resource's
+ID/version for example, as the returned FHIR resource would not include this 
+information).
+
+Additionally, you can limit updates to only proceed if the latest version of the
+resource on the server matches a version number you specify by passing an
+extra `:version [version-number]` argument. If the latest version of the resource
+on the server does not match, the resource will not be updated and an exception
+is thrown.
+
+`update` will throw an exception if the resource you pass in is not a Clojure map that 
+contains a `:resourceType` key with a value that is anything other then `"Bundle"`).
+
+```clojure
+(def updated-patient
+  {:managingOrganization {:resource "Organization/1.3.6.1.4.1.12201"}
+   :name [{:given ["Nurse"]
+           :family ["Test"]}]
+   :birthDate "1965-11-19T00:00:00-05:00"
+   :resourceType "Patient"
+   :identifier
+   [{:assigner {:resource "Organization/1.3.6.1.4.1.12201"}
+     :system "urn:oid:2.16.840.1.113883.3.239.18.148"
+     :use "official"
+     :value "7010168"
+     :label "University Health Network MRN 7010168"}]
+   :telecom
+   [{:system "phone" :use "home" :value "(416)000-0000"}
+    {:system "phone" :use "work" :value "555-555-5555}
+    {:system "phone" :use "mobile"}
+    {:system "email" :use "home"}]
+   :gender
+   {:coding
+    [{:system "http://hl7.org/fhir/v3/AdministrativeGender"
+      :code "F"}]}
+   :text {:div "<div/>"}}
+
+; updates an existing resource. will return a map that should look almost identical to the above
+; (some servers may autogenerate the :text :div value, if so that value will be included
+; in the returned map of course)
+(update server-url :patient 1234 updated-patient)
+=> {
+    ; resource
+    } 
+
+; updates an existing resource, but only return the URL to the updated resource
+(update server-url :patient 1234 updated-patient)
+=> http://server-url/Patient/1234/_history/2
+
+; update an existing resource only if the version matches
+(update server-url :patient 1234 updated-patient :version 1)
+=> {
+    ; resource
+    } 
+
+; NOTE: error responses are identical to clj-hl7-fhir.core/create. see examples for that
+;       function for more information
+```
+
+
+##### Examples
+
 
 ### Error Handling
 
