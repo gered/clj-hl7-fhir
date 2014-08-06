@@ -216,7 +216,7 @@ into properly formatted ISO date/time strings that match FHIR specifications:
 | Function | Format | Example output
 |----------|--------|---------------
 | `->timestamp` | `yyyy-MM-dd'T'HH:mm:ssXXX` | `2014-08-05T10:49:37-04:00`
-| `->local-timestamp` | `yyyy-MM-dd'T'HH:mm:ss` | `2014-08-05T10:49:37-04:00`
+| `->local-timestamp` | `yyyy-MM-dd'T'HH:mm:ss` | `2014-08-06T10:01:22`
 | `->date` | `yyyy-MM-dd` | `2014-08-05`
 
 ##### Search Results

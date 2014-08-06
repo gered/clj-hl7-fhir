@@ -27,7 +27,7 @@
    will not include any timezone information and so is appropriate for local timezone
    date/times only."
   [^Date date]
-  (format-date date iso8601-timestamp))
+  (format-date date iso8601-local-timestamp))
 
 (defn ->date
   "returns an ISO8601 formatted date string for the given date object"
