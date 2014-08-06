@@ -22,7 +22,6 @@ This library is still early along in development, and some important features ar
 
 * Authentication support
 * Remaining API calls
-  * [history](http://hl7.org/implement/standards/fhir/http.html#history)
   * [validate](http://hl7.org/implement/standards/fhir/http.html#validate)
   * [transaction](http://hl7.org/implement/standards/fhir/http.html#transaction)
   * [conformance](http://hl7.org/implement/standards/fhir/http.html#conformance)
@@ -44,6 +43,7 @@ Most of the basic RESTful API operations are supported currently.
 
 * [read](http://hl7.org/implement/standards/fhir/http.html#read)
 * [vread](http://hl7.org/implement/standards/fhir/http.html#vread)
+* [history](http://hl7.org/implement/standards/fhir/http.html#history)
 * [search](http://hl7.org/implement/standards/fhir/http.html#search)
 * [create](http://hl7.org/implement/standards/fhir/http.html#create)
 * [update](http://hl7.org/implement/standards/fhir/http.html#update)
@@ -176,6 +176,78 @@ that has already been retrieved.
 ; trying to read an invalid resource
 (get-resource server-url :foobar 42)
 => ExceptionInfo FHIR request failed: HTTP 400
+```
+
+### history
+
+Obtaining a "revision history" for a resource can be done with the `history` function.
+It returns a FHIR bundle containing resources for each change made to the resource.
+This will include any deletions. Deletions are defined in a [different format](http://www.hl7.org/implement/standards/fhir/json.html#json-bundle-delete) 
+then other "normal" FHIR resources. `collect-resources` will not return deletions.
+
+You can also use the standard FHIR parameters `:_count` and `:_since` to filter the
+returned versions ([see here for more info](http://hl7.org/implement/standards/fhir/http.html#history)).
+
+##### Examples
+
+```clojure
+; retrieving version history for a patient resource
+; (showing an example result that includes a deletion for demonstration purposes)
+(history server-url :patient 1651)
+=> {:resourceType "Bundle",
+    :id "416fda0f-2605-40be-b249-46dbc3c9fe36",
+    :published "2014-08-06T10:33:42.976-04:00",
+    :link
+    [{:rel "self",
+      :href
+      "http://10.160.2.151:28080/hapi-fhir-jpaserver/base/Patient/1651/_history"}
+     {:rel "fhir-base", :href "http://fhirtest.uhn.ca/base"}],
+    :totalResults "2",
+    :author [{:name "HAPI FHIR Server"}],
+    :entry
+    [{:deleted "2014-08-01T14:11:03.565-04:00",
+      :title "Huckleberry LIN (University Health Network MRN 7007469)",
+      :id "http://fhirtest.uhn.ca/base/Patient/1651",
+      :link
+      [{:rel "self",
+        :href "http://fhirtest.uhn.ca/base/Patient/1651/_history/2"}],
+      :updated "2014-08-01T14:11:03.565-04:00",
+      :published "2014-08-01T14:07:09.158-04:00"}
+     {:title "Huckleberry LIN (University Health Network MRN 7007469)",
+      :id "http://fhirtest.uhn.ca/base/Patient/1651",
+      :link
+      [{:rel "self",
+        :href "http://fhirtest.uhn.ca/base/Patient/1651/_history/1"}],
+      :updated "2014-08-01T14:07:09.165-04:00",
+      :published "2014-08-01T14:07:09.158-04:00",
+      :content
+      {:resourceType "Patient",
+       :text
+       {:status "generated",
+        :div
+        "<div><div class=\"hapiHeaderText\"> Huckleberry <b>LIN </b></div><table class=\"hapiPropertyTable\"><tbody><tr><td>Identifier</td><td>University Health Network MRN 7007469</td></tr><tr><td>Date of birth</td><td><span>01 January 1884</span></td></tr></tbody></table></div>"},
+       :identifier
+       [{:use "official",
+         :label "University Health Network MRN 7007469",
+         :system "urn:oid:2.16.840.1.113883.3.239.18.148",
+         :value "7007469",
+         :assigner {:resource "Organization/1.3.6.1.4.1.12201"}}],
+       :name [{:family ["Lin"], :given ["Huckleberry"]}],
+       :telecom
+       [{:system "phone", :value "555-9999", :use "home"}
+        {:system "phone", :use "work"}
+        {:system "phone", :use "mobile"}
+        {:system "email", :use "home"}],
+       :gender
+       {:coding
+        [{:system "http://hl7.org/fhir/v3/AdministrativeGender",
+          :code "M"}]},
+       :birthDate "1884-01-01T00:00:00",
+       :managingOrganization
+       {:resource "Organization/1.3.6.1.4.1.12201"}}}]}
+
+; only show history for items beyond a certain date
+(history server-url :patient 1234 :_since "2014-06-01T00:00:00")
 ```
 
 ### search
