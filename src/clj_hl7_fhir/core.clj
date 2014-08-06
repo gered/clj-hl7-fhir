@@ -319,6 +319,29 @@
       (apply join-paths url-components)
       :params {:_id id})))
 
+(defn history
+  "returns a bundle containing the history of a single FHIR resource. note that this history can
+   include deletions as well, and these entries are not in a format parseable as a normal FHIR
+   resource. as a result, using a function like collect-resources on the returned bundle is not
+   generally recommended. if the resource could not be found, a bundle containing zero entries is
+   returned. an exception is thrown if an error response is received.
+
+   because some resources may have a large history, the bundle's contents may be paged. use the
+   helper functions fetch-next-page and fetch-all to work through all returned pages.
+
+   reference:
+   history: http://hl7.org/implement/standards/fhir/http.html#history"
+  [base-url type id & params]
+  (let [resource-name (->fhir-resource-name type)
+        url-components ["/" resource-name id "_history"]]
+    (fhir-request :get
+      base-url
+      (apply join-paths url-components)
+      :params (apply hash-map (if (and (seq? params)
+                                       (= 1 (count params)))
+                                (first params)
+                                params)))))
+
 (defn search
   "searches for resources on a FHIR server. multiple parameters are ANDed together. use of the search
    operator helper functions is encouraged to ensure proper escaping/encoding of search parameters.
