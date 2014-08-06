@@ -150,7 +150,9 @@
     :value value}))
 
 (defn collect-resources
-  "returns a sequence containing all of the resources contained in the given bundle
+  "returns a sequence containing all of the resources contained in the given bundle.
+   deleted resources listed in the bundle will not be included in the returned
+   sequence (they have no :content)
 
   reference:
   bundles: http://hl7.org/implement/standards/fhir/extras.html#bundle"
@@ -158,7 +160,8 @@
   (validate-bundle! bundle)
   (->> bundle
        :entry
-       (map :content)))
+       (map :content)
+       (remove nil?)))
 
 (defn- get-bundle-next-page-url [bundle]
   (validate-bundle! bundle)
