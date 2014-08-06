@@ -494,6 +494,13 @@ is set in the exception.
        "Unknown resource type 'Foobar' - Server knows how to handle: [User, Condition, Supply, GVFVariant, Organization, Group, ValueSet, Coverage, ImmunizationRecommendation, Appointment, MedicationDispense, MedicationPrescription, Slot, AppointmentResponse, MedicationStatement, SequencingLab, Questionnaire, Composition, OperationOutcome, Conformance, Media, Other, Profile, DocumentReference, Immunization, Microarray, OrderResponse, ConceptMap, Practitioner, ImagingStudy, GVFMeta, CarePlan, Provenance, Device, Query, Order, Procedure, Substance, DiagnosticReport, Medication, MessageHeader, DocumentManifest, Availability, MedicationAdministration, Encounter, SecurityEvent, GeneExpression, SequencingAnalysis, List, DeviceObservationReport, Claim, FamilyHistory, Location, AllergyIntolerance, GeneticAnalysis, Observation, RelatedPerson, Specimen, Alert, Patient, Remittance, AdverseReaction, DiagnosticOrder]"}]}}
 ```
 
+Note that when using `ex-data` to retrieve more detailed error information, the map
+returned will always contain the following information:
+
+* `:status` the HTTP status code of the error response
+* `:response` the actual body of the response. parsed as JSON if the response was detected to be a FHIR response (e.g. an OperationOutcome)
+* `:fhir-resource?` will be true if `:response` contains FHIR content, false otherwise (in which case, `:response` likely contains a string of HTML).
+
 ## License
 
 Licensed under the Apache License, Version 2.0 (the "License");
