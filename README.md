@@ -298,7 +298,8 @@ returned.
 
 Optionally you can specify `:return-resource? false` to have `create` return a full URL to the 
 newly created resource instead (this can be useful if you need the new resource's ID for example,
-as the returned FHIR resource would not otherwise include this information).
+as the returned FHIR resource would not otherwise include this information). You can use the
+`parse-resource-url` function to parse this URL into it's discrete components.
 
 `create` will throw an exception if the resource you pass is not a Clojure map that contains
 a `:resourceType` key with a value that is anything other then `"Bundle"`).
@@ -364,7 +365,8 @@ the newly updated resource is returned.
 Optionally you can specify `:return-resource? false` to return a full URL to the 
 updated resource instead (this can be useful if you need the resource's ID/version 
 for example, as the returned FHIR resource would not otherwise include this 
-information).
+information). You can use the `parse-resource-url` function to parse this URL into 
+it's discrete components.
 
 Additionally, you can limit updates to only proceed if the latest version of the
 resource on the server matches a version number you specify by passing an extra 
