@@ -366,6 +366,8 @@
       (apply join-paths uri-components))))
 
 (defn deleted?
+  "checks if a resource has been deleted or not. this is based on FHIR servers returning
+   an HTTP 410 response when trying to retrieve a resource that has been deleted."
   [base-url type id]
   (let [resource-name  (->fhir-resource-name type)
         url-components ["/" resource-name id]
