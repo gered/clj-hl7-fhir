@@ -50,19 +50,6 @@
        (flatten)
        (apply str)))
 
-(defn kv-vector->query
-  "should really be using cemerick.url/map->query in all cases except when you need 2 values under the
-   name name in the query string (such as with FHIR's date 'between' search support)"
-  [kvs]
-  (some->> (partition 2 kvs)
-           (map (fn [[k v]]
-                  [(url-encode (name k))
-                   "="
-                   (url-encode (str v))]))
-           (interpose "&")
-           flatten
-           (apply str)))
-
 (defn join-paths [& paths]
   (as-> paths x
         (remove nil? x)
