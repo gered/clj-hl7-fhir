@@ -149,6 +149,42 @@
    {:namespace namespace
     :value value}))
 
+(defn- strip-query-params [url]
+  (let [pos (.indexOf url "?")]
+    (if-not (= -1 pos)
+      (subs url 0 pos)
+      url)))
+
+(defn- strip-base-url [url server-url]
+  (if (.startsWith url server-url)
+    (let [stripped-url (subs url (count server-url))]
+      (if (= \/ (first stripped-url))
+        (subs stripped-url 1)
+        stripped-url))
+    url))
+
+(defn parse-resource-url
+  "given an absolute URL to a FHIR resource and the base URL for the FHIR server, parses the
+   URL returning a map containing the resource type, id and version number (if present). if
+   the URL cannot be parsed, returns nil"
+  [server-url url]
+  (if (and server-url
+           url
+           (.startsWith url server-url))
+    (let [parts (-> (strip-query-params url)
+                    (strip-base-url server-url)
+                    (str/split #"/"))]
+      (cond
+        (= 2 (count parts))
+        {:type (-> parts first ->kebab-case keyword)
+         :id (second parts)}
+
+        (and (= 4 (count parts))
+             (= "_history" (nth parts 2)))
+        {:type (-> parts first ->kebab-case keyword)
+         :id (second parts)
+         :version (last parts)}))))
+
 (defn collect-resources
   "returns a sequence containing all of the resources contained in the given bundle.
    deleted resources listed in the bundle will not be included in the returned
