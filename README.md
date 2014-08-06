@@ -229,6 +229,9 @@ to return a sequence of just the resources by passing/threading the results from
 ```clojure
 (collect-resources
   (search server-url ...)
+=> ({:resourceType ... }
+    {:resourceType ... }
+    {:resourceType ... })
 ```
 
 ##### Paged Results
