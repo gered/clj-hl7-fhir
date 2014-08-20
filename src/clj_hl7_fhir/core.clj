@@ -164,26 +164,33 @@
     url))
 
 (defn parse-resource-url
-  "given an absolute URL to a FHIR resource and the base URL for the FHIR server, parses the
-   URL returning a map containing the resource type, id and version number (if present). if
-   the URL cannot be parsed, returns nil"
-  [server-url url]
-  (if (and server-url
-           url
-           (.startsWith url server-url))
-    (let [parts (-> (strip-query-params url)
-                    (strip-base-url server-url)
-                    (str/split #"/"))]
-      (cond
-        (= 2 (count parts))
-        {:type (-> parts first ->kebab-case keyword)
-         :id (second parts)}
+  "parses an absolute URL to a FHIR resource or a relative URL to a FHIR resource. if an
+   absolute URL is provided, any present version number will also be parsed. returns a map
+   containing the discrete components of the URL that can be used to identify the resouce.
+   if the URL cannot be parsed, returns nil"
+  ([relative-url]
+   (let [parts (-> (strip-query-params relative-url)
+                   (str/split #"/"))]
+     (if (= 2 (count parts))
+       {:type (-> parts first ->kebab-case keyword)
+        :id (second parts)})))
+  ([server-url absolute-url]
+   (if (and server-url
+            absolute-url
+            (.startsWith absolute-url server-url))
+     (let [parts (-> (strip-query-params absolute-url)
+                     (strip-base-url server-url)
+                     (str/split #"/"))]
+       (cond
+         (= 2 (count parts))
+         {:type (-> parts first ->kebab-case keyword)
+          :id (second parts)}
 
-        (and (= 4 (count parts))
-             (= "_history" (nth parts 2)))
-        {:type (-> parts first ->kebab-case keyword)
-         :id (second parts)
-         :version (last parts)}))))
+         (and (= 4 (count parts))
+              (= "_history" (nth parts 2)))
+         {:type (-> parts first ->kebab-case keyword)
+          :id (second parts)
+          :version (last parts)})))))
 
 (defn collect-resources
   "returns a sequence containing all of the resources contained in the given bundle.
