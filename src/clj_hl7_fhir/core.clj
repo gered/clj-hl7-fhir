@@ -464,7 +464,3 @@
 ;(def server-url "http://fhir.healthintersections.com.au/open")
 ;(def server-url "http://spark.furore.com/fhir")
 ;(def server-url "http://fhirtest.uhn.ca/base")
-
-
-(clojure.pprint/pprint
-  (get-resource server-url :patient 38))
