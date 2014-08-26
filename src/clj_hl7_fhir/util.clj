@@ -78,6 +78,15 @@
         (map? body)    {:body (json/generate-string body)}
         (string? body) {:body body}))))
 
+(defn http-post-form [url & [body]]
+  (http-request
+    http/post url
+    (merge
+      {:content-type "application/x-www-form-urlencoded"}
+      (cond
+        (map? body)    {:body (json/generate-string body)}
+        (string? body) {:body body}))))
+
 (defn http-put-json [url & [body]]
   (http-request
     http/put url

@@ -13,29 +13,31 @@
   (and (map? response)
        (.contains (get-in response [:headers "Content-Type"]) "application/json+fhir")))
 
-(defn- fhir-request [type base-url resource-url & {:keys [params body follow-location?]}]
+(defn- fhir-request [type base-url resource-url & {:keys [params body params-as-body? follow-location?]}]
   (let [query            (map->query-string params)
-        url              (build-url base-url resource-url query)
+        url              (build-url base-url resource-url (if-not params-as-body? query))
+        body             (if params-as-body? query body)
         follow-location? (if (nil? follow-location?) true follow-location?)]
     (try
-      (let [response (case type
-                       :get    (http-get-json url)
-                       :post   (http-post-json url body)
-                       :put    (http-put-json url body)
-                       :delete (http-delete-json url body))
-            body     (:body response)
-            location (get-in response [:headers "Location"])]
+      (let [response      (case type
+                            :get       (http-get-json url)
+                            :form-post (http-post-form url body)
+                            :post      (http-post-json url body)
+                            :put       (http-put-json url body)
+                            :delete    (http-delete-json url body))
+            response-body (:body response)
+            location      (get-in response [:headers "Location"])]
         (if location
           (if follow-location?
             (-> (http-get-json location)
                 :body
                 (json/parse-string true))
             (if (fhir-response? response)
-              (json/parse-string body true)
+              (json/parse-string response-body true)
               location))
           (if (fhir-response? response)
-            (json/parse-string body true)
-            body)))
+            (json/parse-string response-body true)
+            response-body)))
       (catch ExceptionInfo ex
         (let [{:keys [status body] :as response} (:object (ex-data ex))
               fhir-resource-response?            (fhir-response? response)]
@@ -355,14 +357,19 @@
    the results of this function can be passed to fetch-next-page or fetch-all to collect resources
    returned in paged search results easier. an exception is thrown if an error response is received.
 
+   to overcome HTTP GET query size limitations that could be an issue for search operations with
+   a large number of parameters, all search requests are submitted as
+   application/x-www-form-urlencoded HTTP POST requests.
+
    reference:
    search: http://hl7.org/implement/standards/fhir/http.html#search"
   [base-url type where & params]
   (let [resource-name  (->fhir-resource-name type)
         url-components ["/" resource-name "/_search"]]
-    (fhir-request :get
+    (fhir-request :form-post
       base-url
       (apply join-paths url-components)
+      :params-as-body? true
       :params (merge
                 (search-params->query-map where)
                 (apply hash-map (if (and (seq? params)
@@ -457,3 +464,7 @@
 ;(def server-url "http://fhir.healthintersections.com.au/open")
 ;(def server-url "http://spark.furore.com/fhir")
 ;(def server-url "http://fhirtest.uhn.ca/base")
+
+
+(clojure.pprint/pprint
+  (get-resource server-url :patient 38))
