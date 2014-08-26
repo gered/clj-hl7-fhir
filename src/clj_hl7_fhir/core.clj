@@ -359,7 +359,7 @@
    search: http://hl7.org/implement/standards/fhir/http.html#search"
   [base-url type where & params]
   (let [resource-name  (->fhir-resource-name type)
-        url-components ["/" resource-name]]
+        url-components ["/" resource-name "/_search"]]
     (fhir-request :get
       base-url
       (apply join-paths url-components)
