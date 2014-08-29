@@ -483,6 +483,22 @@
             (= http-status 404) false
             :else               (throw ex)))))))
 
+(defn transaction
+  "creates/updates/deletes resources specified in a bundle. if the entire transaction
+   succeeded, then a bundle is returned containing changed resources. some servers
+   may also return an additional OperationOutcome resource with additional information
+   about the transaction. throws an exception if an error response was received.
+
+   reference:
+   http://hl7.org/implement/standards/fhir/http.html#transaction"
+  [base-url bundle]
+  (if-not (bundle? bundle)
+    (throw (Exception. "Not a valid FHIR bundle")))
+  (fhir-request :post
+    base-url
+    "/"
+    :body bundle))
+
 ;(def server-url "http://fhir.healthintersections.com.au/open")
 ;(def server-url "http://spark.furore.com/fhir")
 ;(def server-url "http://fhirtest.uhn.ca/base")
