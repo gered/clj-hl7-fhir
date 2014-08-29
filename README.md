@@ -20,7 +20,6 @@ How you create and/or read the HL7 data and what you do with it is beyond the sc
 
 This library is still early along in development, and some important features are missing at the moment:
 
-* Authentication support
 * Remaining API calls
   * [validate](http://hl7.org/implement/standards/fhir/http.html#validate)
   * [transaction](http://hl7.org/implement/standards/fhir/http.html#transaction)
@@ -530,6 +529,37 @@ technically still exists under previous version numbers).
 ; testing if a non-existant resource has been deleted
 (deleted? server-url :patient 9001)
 => false
+```
+
+### Authentication
+
+If you need to access FHIR resources on a server requiring authentication, you can
+wrap all of your FHIR calls in `with-auth` which takes a parameter that can specify
+HTTP [basic authentication](http://en.wikipedia.org/wiki/Basic_access_authentication), 
+[digest authentication](http://en.wikipedia.org/wiki/Digest_access_authentication) 
+or an [OAuth bearer token](http://self-issued.info/docs/draft-ietf-oauth-v2-bearer.html).
+
+The format you specify username/passwords for basic/digest authentication is the same
+as in [clj-http](https://github.com/dakrone/clj-http): either a vector containing 2
+strings (username and password) or a single string containing both separated by a colon.
+
+##### Examples
+
+```clojure
+; no authentication ...
+(search server-url :patient [(eq :name "smith")])
+
+; HTTP basic auth
+(with-auth {:basic-auth ["user" "pass"]}
+  (search server-url :patient [(eq :name "smith")]))
+
+; HTTP digest auth
+(with-auth {:digest-auth ["user" "pass"]}
+  (search server-url :patient [(eq :name "smith")]))
+
+; OAuth bearer token
+(with-auth {:oauth-token user-oauth-token}
+  (search server-url :patient [(eq :name "smith")]))
 ```
 
 ### Error Handling
