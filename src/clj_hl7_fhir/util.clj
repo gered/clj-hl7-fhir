@@ -69,7 +69,7 @@
 (defn http-get-json [url]
   (http-request http/get url))
 
-(defn http-post-json [url & [body]]
+(defn http-post-json [url body]
   (http-request
     http/post url
     (merge
@@ -78,7 +78,7 @@
         (map? body)    {:body (json/generate-string body)}
         (string? body) {:body body}))))
 
-(defn http-post-form [url & [body]]
+(defn http-post-form [url body]
   (http-request
     http/post url
     (merge
@@ -87,7 +87,7 @@
         (map? body)    {:body (json/generate-string body)}
         (string? body) {:body body}))))
 
-(defn http-put-json [url & [body]]
+(defn http-put-json [url body]
   (http-request
     http/put url
     (merge
@@ -96,5 +96,5 @@
         (map? body)    {:body (json/generate-string body)}
         (string? body) {:body body}))))
 
-(defn http-delete-json [url & [body]]
+(defn http-delete-json [url body]
   (http-request http/delete url (if body {:body body})))
