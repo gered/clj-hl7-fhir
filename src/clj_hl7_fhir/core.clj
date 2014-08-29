@@ -6,6 +6,27 @@
   (:use [camel-snake-kebab]
         [clj-hl7-fhir.util]))
 
+; HACK: using this dynamic/"with"-wrapping type of API design is arguably a "lazy" design.
+;       in the future I intend to explore reworking the API so as to not require this if
+;       authentication support is needed, but I didn't want to get too held up on it right
+;       now. the problem at the moment is that passing authentication info to the main
+;       FHIR operation functions is that it only works well in the simple cases. usage
+;       of functions like fetch-next-page, fetch-all and get-relative-resource becomes
+;       a little bit messy (have to pass in server/auth info where before none of it
+;       was necessary... kind of gross in my opinion, would rather come up with
+;       something cleaner if at all possible)
+
+(def ^:dynamic *server-auth* nil)
+
+(defmacro with-auth
+  "wraps code that performs FHIR operations such that each will have authentication info
+   added to the HTTP requests made. auth should be a map containing one entry where the
+   key is one of :basic-auth, :digest-auth or :oauth-token (authentication headers that
+   clj-http supports)"
+  [auth & body]
+  `(binding [*server-auth* (select-keys ~auth [:basic-auth :digest-auth :oauth-token])]
+     ~@body))
+
 (defn- ->fhir-resource-name [x]
   (name (->CamelCase x)))
 
@@ -15,16 +36,17 @@
 
 (defn- fhir-request [type base-url resource-url & {:keys [params body params-as-body? follow-location?]}]
   (let [query            (map->query-string params)
+        auth             *server-auth*
         url              (build-url base-url resource-url (if-not params-as-body? query))
         body             (if params-as-body? query body)
         follow-location? (if (nil? follow-location?) true follow-location?)]
     (try
       (let [response      (case type
-                            :get       (http-get-json url)
-                            :form-post (http-post-form url body)
-                            :post      (http-post-json url body)
-                            :put       (http-put-json url body)
-                            :delete    (http-delete-json url body))
+                            :get       (http-get-json url auth)
+                            :form-post (http-post-form url auth body)
+                            :post      (http-post-json url auth body)
+                            :put       (http-put-json url auth body)
+                            :delete    (http-delete-json url auth body))
             response-body (:body response)
             location      (get-in response [:headers "Location"])]
         (if location

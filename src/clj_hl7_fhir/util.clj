@@ -66,35 +66,42 @@
 (defn- http-request [f url & [params]]
   (f url (merge {:accept "application/json+fhir"} params)))
 
-(defn http-get-json [url]
-  (http-request http/get url))
+(defn http-get-json [url params]
+  (http-request http/get url params))
 
-(defn http-post-json [url body]
+(defn http-post-json [url params body]
   (http-request
     http/post url
     (merge
       {:content-type "application/json+fhir"}
       (cond
         (map? body)    {:body (json/generate-string body)}
-        (string? body) {:body body}))))
+        (string? body) {:body body})
+      params)))
 
-(defn http-post-form [url body]
+(defn http-post-form [url params body]
   (http-request
     http/post url
     (merge
       {:content-type "application/x-www-form-urlencoded"}
       (cond
         (map? body)    {:body (json/generate-string body)}
-        (string? body) {:body body}))))
+        (string? body) {:body body})
+      params)))
 
-(defn http-put-json [url body]
+(defn http-put-json [url params body]
   (http-request
     http/put url
     (merge
       {:content-type "application/json+fhir"}
       (cond
         (map? body)    {:body (json/generate-string body)}
-        (string? body) {:body body}))))
+        (string? body) {:body body})
+      params)))
 
-(defn http-delete-json [url body]
-  (http-request http/delete url (if body {:body body})))
+(defn http-delete-json [url params body]
+  (http-request
+    http/delete url
+    (merge
+      (if body {:body body})
+      params)))
