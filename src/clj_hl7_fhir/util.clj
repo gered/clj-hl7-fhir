@@ -34,6 +34,29 @@
   [^Date date]
   (format-date date iso8601-date))
 
+(defn parse-formatted-timestamp [^String timestamp ^String format]
+  (if-not (str/blank? timestamp)
+    (let [df (SimpleDateFormat. format)]
+      (.setTimeZone df tz)
+      (.parse df timestamp))))
+
+(defn parse-timestamp
+  "parses an ISO8601 formatted date/time string with timezone information, returning an
+   equivalent Date object"
+  [^String timestamp]
+  (parse-formatted-timestamp timestamp iso8601-timestamp))
+
+(defn parse-local-timestamp
+  "parses an ISO8601 formatted date/time string without timezone information (appropriate
+   for local timezone date/times only), returning an equivalent Date object"
+  [^String timestamp]
+  (parse-formatted-timestamp timestamp iso8601-local-timestamp))
+
+(defn parse-date
+  "parses an ISO8601 formatted date string, returning an equivalent Date object"
+  [^String date]
+  (parse-formatted-timestamp date iso8601-date))
+
 (defn map->query-string [m]
   (->> m
        (reduce
