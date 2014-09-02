@@ -239,6 +239,24 @@
          :id   (second no-version-url-parts)})
       )))
 
+(defn absolute->relative-url
+  "turns an absolute FHIR resource URL into a relative one."
+  [absolute-url]
+  (if-let [{:keys [type id version]} (parse-absolute-url absolute-url)]
+    (if version
+      (str type "/" id "/_history/" version)
+      (str type "/" id))))
+
+(defn relative->absolute-url
+  "combines a base URL to a FHIR server and a relative FHIR resource URL into an
+   absolute resource URL."
+  [base-url relative-url]
+  (if-not (or (str/blank? base-url)
+              (str/blank? relative-url))
+    (-> (join-paths base-url relative-url)
+        (url)
+        (.toString))))
+
 (defn collect-resources
   "returns a sequence containing all of the resources contained in the given bundle.
    deleted resources listed in the bundle will not be included in the returned
