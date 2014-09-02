@@ -105,3 +105,8 @@
     (merge
       (if body {:body body})
       params)))
+
+(defn second-last [coll]
+  (if (and (seq coll)
+           (> (count coll) 1))
+    (nth coll (- (count coll) 2))))
