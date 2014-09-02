@@ -271,10 +271,24 @@
        (map :content)
        (remove nil?)))
 
-(defn- get-bundle-next-page-url [bundle]
+(defn get-bundle-next-page-url
+  "returns the 'next' bundle URL from the given FHIR bundle. useful for paged
+   search results. throws an exception if the value passed is not a valid FHIR
+   bundle."
+  [bundle]
   (validate-bundle! bundle)
   (->> (:link bundle)
        (filter #(= "next" (:rel %)))
+       (first)
+       :href))
+
+(defn get-base-url-from-bundle
+  "returns the base-url from the given FHIR bundle. throws an exception if the
+   value passed is not a valid FHIR bundle."
+  [bundle]
+  (validate-bundle!)
+  (->> (:link bundle)
+       (filter #(= "fhir-base" (:rel %)))
        (first)
        :href))
 
