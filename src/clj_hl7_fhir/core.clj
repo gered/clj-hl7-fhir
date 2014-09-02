@@ -2,6 +2,7 @@
   (:import (java.util Date)
            (clojure.lang ExceptionInfo))
   (:require [clojure.string :as str]
+            [cemerick.url :refer [url]]
             [cheshire.core :as json])
   (:use [camel-snake-kebab]
         [clj-hl7-fhir.util]))
@@ -187,34 +188,56 @@
         stripped-url))
     url))
 
-(defn parse-resource-url
-  "parses an absolute URL to a FHIR resource or a relative URL to a FHIR resource. if an
-   absolute URL is provided, any present version number will also be parsed. returns a map
-   containing the discrete components of the URL that can be used to identify the resouce.
-   if the URL cannot be parsed, returns nil"
-  ([relative-url]
-   (let [parts (-> (strip-query-params relative-url)
-                   (str/split #"/"))]
-     (if (= 2 (count parts))
-       {:type (-> parts first ->kebab-case keyword)
-        :id (second parts)})))
-  ([server-url absolute-url]
-   (if (and server-url
-            absolute-url
-            (.startsWith absolute-url server-url))
-     (let [parts (-> (strip-query-params absolute-url)
-                     (strip-base-url server-url)
-                     (str/split #"/"))]
-       (cond
-         (= 2 (count parts))
-         {:type (-> parts first ->kebab-case keyword)
-          :id (second parts)}
+(defn- format-resource-url-type [url-path-parts keywordize?]
+  (if keywordize?
+    (-> url-path-parts first ->kebab-case keyword)
+    (-> url-path-parts first ->fhir-resource-name)))
 
-         (and (= 4 (count parts))
-              (= "_history" (nth parts 2)))
-         {:type (-> parts first ->kebab-case keyword)
-          :id (second parts)
-          :version (last parts)})))))
+(defn parse-relative-url
+  "parses a relative FHIR resource URL, returning a map containing each of the discrete
+   components of the URL (resource type, id, version number). if the optional
+   keywordize? arg is true, then returned resource type names will be turned into a
+   \"kebab case\" keyword (as opposed to a camelcase string which is the default). if
+   the URL cannot be parsed, returns nil"
+  [resource-url & [keywordize?]]
+  (let [parts (-> (strip-query-params resource-url)
+                  (str/split #"/"))]
+    (cond
+      (= 2 (count parts))
+      {:type (format-resource-url-type parts keywordize?)
+       :id   (second parts)}
+
+      (and (= 4 (count parts))
+           (= "_history" (nth parts 2)))
+      {:type    (format-resource-url-type parts keywordize?)
+       :id      (second parts)
+       :version (last parts)})))
+
+(defn parse-absolute-url
+  "parses an absolute FHIR resource URL, returning a map containing each of the discrete
+   components of the URL (resource type, id, version number). if the optional
+   keywordize? arg is true, then returned resource type names will be turned into a
+   \"kebab case\" keyword (as opposed to a camelcase string which is the default). if
+   the URL cannot be parsed, returns nil."
+  [absolute-url & [keywordize?]]
+  (let [{:keys [path]} (url absolute-url)
+        parts          (str/split path #"/")
+        has-version?   (= "_history" (second (reverse parts)))]
+    (cond
+      (and (> (count parts) 4)
+           (= "_history" (second-last parts))
+           has-version?)
+      (let [versioned-url-parts (take-last 4 parts)]
+        {:type    (format-resource-url-type versioned-url-parts keywordize?)
+         :id      (second versioned-url-parts)
+         :version (last parts)})
+
+      (and (> (count parts) 2)
+           (not has-version?))
+      (let [no-version-url-parts (take-last 2 parts)]
+        {:type (format-resource-url-type no-version-url-parts keywordize?)
+         :id   (second no-version-url-parts)})
+      )))
 
 (defn collect-resources
   "returns a sequence containing all of the resources contained in the given bundle.
