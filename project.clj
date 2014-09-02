@@ -1,4 +1,4 @@
-(defproject clj-hl7-fhir "0.2.2"
+(defproject clj-hl7-fhir "0.2.3"
   :description "HL7 FHIR JSON client"
   :url "https://github.com/gered/clj-hl7-fhir"
   :license {:name "Apache License, Version 2.0"
