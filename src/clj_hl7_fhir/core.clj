@@ -344,7 +344,10 @@
 (defn find-resource-in
   "finds and returns a resource contained in the given bundle, identified by a
    relative or absolute resource URL. if not found, nil is returned. throws an
-   exception if the bundle and/or url supplied is invalid."
+   exception if the bundle and/or url supplied is invalid.
+
+   reference:
+   bundles: http://hl7.org/implement/standards/fhir/extras.html#bundle"
   [bundle resource-url]
   (when bundle
     (validate-bundle! bundle)
