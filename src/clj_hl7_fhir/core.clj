@@ -341,6 +341,21 @@
                    (= rel "previous"))))
            (vec)))))
 
+(defn find-resource-in
+  "finds and returns a resource contained in the given bundle, identified by a
+   relative or absolute resource URL. if not found, nil is returned. throws an
+   exception if the bundle and/or url supplied is invalid."
+  [bundle resource-url]
+  (when bundle
+    (validate-bundle! bundle)
+    (let [base-url (get-base-url-from-bundle bundle)
+          search-url (if (absolute-url? resource-url)
+                       resource-url
+                       (relative->absolute-url base-url resource-url))]
+      (->> (:entry bundle)
+           (filter #(= search-url (:id %)))
+           (first)))))
+
 (defn fetch-all
   "for resources that are returned over more then one page, this will automatically
    fetch all pages of resources and them into a single bundle that contains all of
