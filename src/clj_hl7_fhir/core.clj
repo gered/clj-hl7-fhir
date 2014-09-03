@@ -257,6 +257,18 @@
         (url)
         (.toString))))
 
+(defn absolute-url?
+  "returns true if the passed URL is an absolute URL, false if not. if the value
+   passed in is not a string (or an empty string) an exception is thrown."
+  [^String resource-url]
+  (if (and (string? resource-url)
+           (not (str/blank? resource-url)))
+    (boolean
+      (try
+        (url resource-url)
+        (catch Exception ex)))
+    (throw (new Exception "Invalid URL or non-string value."))))
+
 (defn collect-resources
   "returns a sequence containing all of the resources contained in the given bundle.
    deleted resources listed in the bundle will not be included in the returned
