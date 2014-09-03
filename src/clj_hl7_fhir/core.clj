@@ -356,6 +356,19 @@
            (filter #(= search-url (:id %)))
            (first)))))
 
+(defn get-contained
+  "returns a resource contained in a parent resource, where the contained resource
+   is identified by an internal reference id.
+
+   reference:
+   contained resources: http://www.hl7.org/implement/standards/fhir/references.html#contained"
+  [containing-resource ref-id]
+  (if-not (str/blank? ref-id)
+    (if-let [parsed-id (if (.startsWith ref-id "#") (subs ref-id 1))]
+      (->> (:contained containing-resource)
+           (filter #(= parsed-id (:id %)))
+           (first)))))
+
 (defn fetch-all
   "for resources that are returned over more then one page, this will automatically
    fetch all pages of resources and them into a single bundle that contains all of
