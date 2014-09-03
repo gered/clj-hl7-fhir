@@ -597,6 +597,77 @@
     "/"
     :body bundle))
 
+(defmulti get-extension-value
+  "returns the value of a FHIR resource extension. the 'extension' argument should be
+   a single extension element that includes a url key identifying the extension.
+   returns nil if the extension value could not be found or the extension type
+   is not recognized.
+
+   reference:
+   extensions: http://hl7.org/implement/standards/fhir/extensibility.html
+   extension elements: http://hl7.org/implement/standards/fhir/extensibility.html#extension"
+  (fn [extension]
+    (->> (keys extension)
+         (remove #(= :url %))
+         (first))))
+
+; TODO: this is currently *NOT* a complete list of all possible extension types!
+;       need to fill this out more ....
+
+(defmethod get-extension-value :valueInteger [extension]
+  (:valueInteger extension))
+
+(defmethod get-extension-value :valueDecimal [extension]
+  (:valueDecimal extension))
+
+(defmethod get-extension-value :valueDateTime [extension]
+  (parse-timestamp (:valueDateTime extension)))
+
+(defmethod get-extension-value :valueDate [extension]
+  (parse-date (:valueDate extension)))
+
+(defmethod get-extension-value :valueInstant [extension]
+  (parse-timestamp (:valueInstant extension)))
+
+(defmethod get-extension-value :valueString [extension]
+  (:valueString extension))
+
+(defmethod get-extension-value :valueUri [extension]
+  (:valueUri extension))
+
+(defmethod get-extension-value :valueBoolean [extension]
+  (boolean (:valueBoolean extension)))
+
+(defmethod get-extension-value :valueCode [extension]
+  (:valueCode extension))
+
+(defmethod get-extension-value :valueCoding [extension]
+  (get-in extension [:valueCoding :code]))
+
+(defmethod get-extension-value :valueResource [extension]
+  (get-in extension [:valueResource :reference]))
+
+(defmethod get-extension-value :extension [extension]
+  (get-extension-value (:extension extension)))
+
+(defmethod get-extension-value :default [_]
+  ; TODO: maybe better to throw an exception? if it's not recognized that probably is
+  ;       a bad thing and indicates a problem with the data format ... ?
+  nil)
+
+(defn get-extension
+  "given a set of one or more extension elements, returns the value for the extension
+   matching the extension URL given, or nil if not found.
+
+   reference:
+   extensions: http://hl7.org/implement/standards/fhir/extensibility.html
+   extension elements: http://hl7.org/implement/standards/fhir/extensibility.html#extension"
+  [extension-values extension-url]
+  (->> extension-values
+       (filter #(= extension-url (:url %)))
+       (first)
+       (get-extension-value)))
+
 ;(def server-url "http://fhir.healthintersections.com.au/open")
 ;(def server-url "http://spark.furore.com/fhir")
 ;(def server-url "http://fhirtest.uhn.ca/base")
