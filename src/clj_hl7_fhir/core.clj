@@ -236,8 +236,7 @@
            (not has-version?))
       (let [no-version-url-parts (take-last 2 parts)]
         {:type (format-resource-url-type no-version-url-parts keywordize?)
-         :id   (second no-version-url-parts)})
-      )))
+         :id   (second no-version-url-parts)}))))
 
 (defn absolute-url?
   "returns true if the passed URL is an absolute URL, false if not. if the value
