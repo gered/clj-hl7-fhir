@@ -199,8 +199,8 @@
    keywordize? arg is true, then returned resource type names will be turned into a
    \"kebab case\" keyword (as opposed to a camelcase string which is the default). if
    the URL cannot be parsed, returns nil"
-  [resource-url & [keywordize?]]
-  (let [parts (-> (strip-query-params resource-url)
+  [relative-url & [keywordize?]]
+  (let [parts (-> (strip-query-params relative-url)
                   (str/split #"/"))]
     (cond
       (= 2 (count parts))
