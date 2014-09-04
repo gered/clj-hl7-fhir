@@ -239,6 +239,33 @@
          :id   (second no-version-url-parts)})
       )))
 
+(defn absolute-url?
+  "returns true if the passed URL is an absolute URL, false if not. if the value
+   passed in is not a string (or an empty string) an exception is thrown."
+  [^String resource-url]
+  (if (and (string? resource-url)
+           (not (str/blank? resource-url)))
+    (boolean
+      (try
+        (url resource-url)
+        (catch Exception ex)))
+    (throw (new Exception "Invalid URL or non-string value."))))
+
+(defn parse-url
+  "parses a FHIR resource URL returning a map containing each of the discrete
+   components of the URL (resource type, id, version number). if the optional
+   keywordize? arg is true, then returned resource type names will be turned into
+   a \"kebab case\" keyword (as opposed to a camelcase string which is the default).
+   if the URL cannot be parsed, returns nil.
+
+   this function will automatically determine if the URL is relative or absolute
+   and will try to parse it appropriately. you should probably just use this
+   function all the time when parsing FHIR resource URLs."
+  [resource-url & [keywordize?]]
+  (if (absolute-url? resource-url)
+    (parse-absolute-url resource-url keywordize?)
+    (parse-relative-url resource-url keywordize?)))
+
 (defn absolute->relative-url
   "turns an absolute FHIR resource URL into a relative one."
   [absolute-url]
@@ -256,18 +283,6 @@
     (-> (join-paths base-url relative-url)
         (url)
         (.toString))))
-
-(defn absolute-url?
-  "returns true if the passed URL is an absolute URL, false if not. if the value
-   passed in is not a string (or an empty string) an exception is thrown."
-  [^String resource-url]
-  (if (and (string? resource-url)
-           (not (str/blank? resource-url)))
-    (boolean
-      (try
-        (url resource-url)
-        (catch Exception ex)))
-    (throw (new Exception "Invalid URL or non-string value."))))
 
 (defn collect-resources
   "returns a sequence containing all of the resources contained in the given bundle.
