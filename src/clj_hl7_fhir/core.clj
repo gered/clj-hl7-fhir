@@ -312,7 +312,7 @@
   "returns the base-url from the given FHIR bundle. throws an exception if the
    value passed is not a valid FHIR bundle."
   [bundle]
-  (validate-bundle!)
+  (validate-bundle! bundle)
   (->> (:link bundle)
        (filter #(= "fhir-base" (:rel %)))
        (first)
