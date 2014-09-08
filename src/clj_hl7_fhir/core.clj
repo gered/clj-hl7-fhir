@@ -461,10 +461,7 @@
       (apply join-paths url-components)
       :params (merge
                 {:_id id}
-                (apply hash-map (if (and (seq? params)
-                                         (= 1 (count params)))
-                                  (first params)
-                                  params))))))
+                (build-params-map params)))))
 
 (defn history
   "returns a bundle containing the history of a single FHIR resource. note that this history can
@@ -484,10 +481,7 @@
     (fhir-request :get
       base-url
       (apply join-paths url-components)
-      :params (apply hash-map (if (and (seq? params)
-                                       (= 1 (count params)))
-                                (first params)
-                                params)))))
+      :params (build-params-map params))))
 
 (defn search
   "searches for resources on a FHIR server. multiple parameters are ANDed together. use of the search
@@ -510,10 +504,7 @@
       :params-as-body? true
       :params (merge
                 (search-params->query-map where)
-                (apply hash-map (if (and (seq? params)
-                                         (= 1 (count params)))
-                                  (first params)
-                                  params))))))
+                (build-params-map params)))))
 
 (defn search-and-fetch
   "same as search, but automatically fetches all pages of resources returning a single bundle

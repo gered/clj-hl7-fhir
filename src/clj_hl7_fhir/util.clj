@@ -73,6 +73,14 @@
        (flatten)
        (apply str)))
 
+(defn build-params-map [m]
+  (apply
+    hash-map
+    (if (and (seq? m)
+             (= 1 (count m)))
+      (first m)
+      m)))
+
 (defn join-paths [& paths]
   (as-> paths x
         (remove nil? x)
