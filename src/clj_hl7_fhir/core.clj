@@ -453,13 +453,18 @@
 
   reference:
   bundles: http://hl7.org/implement/standards/fhir/extras.html#bundle"
-  [base-url type id]
+  [base-url type id & params]
   (let [resource-name (->fhir-resource-name type)
         url-components ["/" resource-name]]
     (fhir-request :get
       base-url
       (apply join-paths url-components)
-      :params {:_id id})))
+      :params (merge
+                {:_id id}
+                (apply hash-map (if (and (seq? params)
+                                         (= 1 (count params)))
+                                  (first params)
+                                  params))))))
 
 (defn history
   "returns a bundle containing the history of a single FHIR resource. note that this history can
