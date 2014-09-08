@@ -279,8 +279,7 @@
   [base-url relative-url]
   (if-not (or (str/blank? base-url)
               (str/blank? relative-url))
-    (-> (join-paths base-url relative-url)
-        (url)
+    (-> (url base-url relative-url)
         (.toString))))
 
 (defn collect-resources
