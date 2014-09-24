@@ -34,7 +34,7 @@
   "wraps code that performs FHIR operations such that each FHIR HTTP request will have
    any extra HTTP headers specified in the given headers map."
   [headers & body]
-  `(binding [*extra-headers* headers]
+  `(binding [*extra-headers* ~headers]
      ~@body))
 
 (defn- ->fhir-resource-name [x]
