@@ -28,6 +28,15 @@
   `(binding [*server-auth* (select-keys ~auth [:basic-auth :digest-auth :oauth-token])]
      ~@body))
 
+(def ^:dynamic *extra-headers* nil)
+
+(defmacro with-headers
+  "wraps code that performs FHIR operations such that each FHIR HTTP request will have
+   any extra HTTP headers specified in the given headers map."
+  [headers & body]
+  `(binding [*extra-headers* headers]
+     ~@body))
+
 (defn- ->fhir-resource-name [x]
   (name (->CamelCase x)))
 
@@ -37,17 +46,19 @@
 
 (defn- fhir-request [type base-url resource-url & {:keys [params body params-as-body? follow-location?]}]
   (let [query            (map->query-string params)
-        auth             *server-auth*
         url              (build-url base-url resource-url (if-not params-as-body? query))
         body             (if params-as-body? query body)
-        follow-location? (if (nil? follow-location?) true follow-location?)]
+        follow-location? (if (nil? follow-location?) true follow-location?)
+        http-req-params  (merge
+                           (if (map? *server-auth*)   *server-auth*)
+                           (if (map? *extra-headers*) {:headers *extra-headers*}))]
     (try
       (let [response      (case type
-                            :get       (http-get-json url auth)
-                            :form-post (http-post-form url auth body)
-                            :post      (http-post-json url auth body)
-                            :put       (http-put-json url auth body)
-                            :delete    (http-delete-json url auth body))
+                            :get       (http-get-json url http-req-params)
+                            :form-post (http-post-form url http-req-params body)
+                            :post      (http-post-json url http-req-params body)
+                            :put       (http-put-json url http-req-params body)
+                            :delete    (http-delete-json url http-req-params body))
             response-body (:body response)
             location      (get-in response [:headers "Location"])]
         (if location
