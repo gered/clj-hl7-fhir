@@ -9,32 +9,36 @@
 
 ; HACK: using this dynamic/"with"-wrapping type of API design is arguably a "lazy" design.
 ;       in the future I intend to explore reworking the API so as to not require this if
-;       authentication support is needed, but I didn't want to get too held up on it right
-;       now. the problem at the moment is that passing authentication info to the main
-;       FHIR operation functions is that it only works well in the simple cases. usage
-;       of functions like fetch-next-page, fetch-all and get-relative-resource becomes
-;       a little bit messy (have to pass in server/auth info where before none of it
-;       was necessary... kind of gross in my opinion, would rather come up with
-;       something cleaner if at all possible)
+;       authentication/http header support is needed, but I didn't want to get too held
+;       up on it right now. the problem at the moment is that passing extra HTTP request
+;       info to the main FHIR operation functions is that it only works well in the simple
+;       cases. usage of functions like fetch-next-page, fetch-all and
+;       get-relative-resource becomes a little bit messy (have to pass in all this info
+;       where before none of it was necessary... kind of gross in my opinion, would rather
+;       come up with something cleaner if at all possible)
 
-(def ^:dynamic *server-auth* nil)
+(def ^:dynamic *options* nil)
 
-(defmacro with-auth
-  "wraps code that performs FHIR operations such that each will have authentication info
-   added to the HTTP requests made. auth should be a map containing one entry where the
-   key is one of :basic-auth, :digest-auth or :oauth-token (authentication headers that
-   clj-http supports)"
-  [auth & body]
-  `(binding [*server-auth* (select-keys ~auth [:basic-auth :digest-auth :oauth-token])]
-     ~@body))
+(defmacro with-options
+  "wraps code that performs FHIR operations so that each FHIR operation runs with some
+   extra options, such as HTTP authentication information, extra HTTP headers, etc.
 
-(def ^:dynamic *extra-headers* nil)
+   HTTP Authentication:
+     specify one of :basic-auth, :digest-auth, :oauth. these should be specified
+     in the same manner as clj-http expects (see the clj-http docs for more info).
+     this authentication info will be added to all FHIR HTTP requests inside this
+     block
 
-(defmacro with-headers
-  "wraps code that performs FHIR operations such that each FHIR HTTP request will have
-   any extra HTTP headers specified in the given headers map."
-  [headers & body]
-  `(binding [*extra-headers* ~headers]
+   HTTP Headers:
+     specify a map of headers under :headers. any headers specified in this way
+     will be added as-is to any FHIR HTTP requests inside this with block
+
+   Untrusted / Self-signed SSL Certificates
+     if you need to send FHIR requests to a server that is not using a trusted
+     SSL cert, you can specify ':insecure? true' in the options
+   "
+  [options & body]
+  `(binding [*options* (select-keys ~options [:basic-auth :digest-auth :oauth-token :headers :insecure?])]
      ~@body))
 
 (defn- ->fhir-resource-name [x]
@@ -50,8 +54,9 @@
         body             (if params-as-body? query body)
         follow-location? (if (nil? follow-location?) true follow-location?)
         http-req-params  (merge
-                           (if (map? *server-auth*)   *server-auth*)
-                           (if (map? *extra-headers*) {:headers *extra-headers*}))]
+                           (if (:insecure? *options*) {:insecure? true})
+                           (select-keys *options* [:basic-auth :digest-auth :oauth-token])
+                           (:headers *options*))]
     (try
       (let [response      (case type
                             :get       (http-get-json url http-req-params)
