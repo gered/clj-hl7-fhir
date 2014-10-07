@@ -56,7 +56,7 @@
         http-req-params  (merge
                            (if (:insecure? *options*) {:insecure? true})
                            (select-keys *options* [:basic-auth :digest-auth :oauth-token])
-                           (:headers *options*))]
+                           (if (map? (:headers *options*)) {:headers (:headers *options*)}))]
     (try
       (let [response      (case type
                             :get       (http-get-json url http-req-params)
