@@ -1,11 +1,14 @@
 (ns clj-hl7-fhir.core
-  (:import (java.util Date)
-           (clojure.lang ExceptionInfo))
-  (:require [clojure.string :as str]
-            [cemerick.url :refer [url]]
-            [cheshire.core :as json])
-  (:use [camel-snake-kebab]
-        [clj-hl7-fhir.util]))
+  (:refer-clojure :exclude [update])
+  (:require
+    [camel-snake-kebab.core :as csk]
+    [cemerick.url :refer [url]]
+    [cheshire.core :as json]
+    [clojure.string :as string]
+    [clj-hl7-fhir.util :as util])
+  (:import
+    (java.util Date)
+    (clojure.lang ExceptionInfo)))
 
 ; HACK: using this dynamic/"with"-wrapping type of API design is arguably a "lazy" design.
 ;       in the future I intend to explore reworking the API so as to not require this if
@@ -49,30 +52,30 @@
     (if (map? (:headers *options*)) {:headers (:headers *options*)})))
 
 (defn- ->fhir-resource-name [x]
-  (name (->CamelCase x)))
+  (name (csk/->PascalCase x)))
 
 (defn- fhir-response? [response]
   (and (map? response)
        (.contains (get-in response [:headers "Content-Type"]) "application/json+fhir")))
 
 (defn- fhir-request [type base-url resource-url & {:keys [params body params-as-body? follow-location?]}]
-  (let [query            (map->query-string params)
-        url              (build-url base-url resource-url (if-not params-as-body? query))
+  (let [query            (util/map->query-string params)
+        url              (util/build-url base-url resource-url (if-not params-as-body? query))
         body             (if params-as-body? query body)
         follow-location? (if (nil? follow-location?) true follow-location?)
         http-req-params  (get-base-http-req-params)]
     (try
       (let [response      (case type
-                            :get       (http-get-json url http-req-params)
-                            :form-post (http-post-form url http-req-params body)
-                            :post      (http-post-json url http-req-params body)
-                            :put       (http-put-json url http-req-params body)
-                            :delete    (http-delete-json url http-req-params body))
+                            :get       (util/http-get-json url http-req-params)
+                            :form-post (util/http-post-form url http-req-params body)
+                            :post      (util/http-post-json url http-req-params body)
+                            :put       (util/http-put-json url http-req-params body)
+                            :delete    (util/http-delete-json url http-req-params body))
             response-body (:body response)
             location      (get-in response [:headers "Location"])]
         (if location
           (if follow-location?
-            (-> (http-get-json location http-req-params)
+            (-> (util/http-get-json location http-req-params)
                 :body
                 (json/parse-string true))
             (if (fhir-response? response)
@@ -98,7 +101,7 @@
       (if (vector? parameter)
         (->> parameter
              (map name)
-             (str/join ".")
+             (string/join ".")
              )
         (name parameter))
       (if modifier
@@ -130,13 +133,13 @@
     (sequential? value)
     (->> value
          (map format-search-value)
-         (str/join ","))
+         (string/join ","))
 
     (map? value)
     (str (:namespace value) "|" (format-search-value (:value value)))
 
     (instance? Date value)
-    (->timestamp value)
+    (util/->timestamp value)
 
     :else
     (-> value str escape-parameter)))
@@ -210,7 +213,7 @@
 
 (defn- format-resource-url-type [url-path-parts keywordize?]
   (if keywordize?
-    (-> url-path-parts first ->kebab-case keyword)
+    (-> url-path-parts first csk/->kebab-case keyword)
     (-> url-path-parts first ->fhir-resource-name)))
 
 (defn parse-relative-url
@@ -221,7 +224,7 @@
    the URL cannot be parsed, returns nil"
   [relative-url & [keywordize?]]
   (let [parts (-> (strip-query-params relative-url)
-                  (str/split #"/"))]
+                  (string/split #"/"))]
     (cond
       (= 2 (count parts))
       {:type (format-resource-url-type parts keywordize?)
@@ -241,11 +244,11 @@
    the URL cannot be parsed, returns nil."
   [absolute-url & [keywordize?]]
   (let [{:keys [path]} (url absolute-url)
-        parts          (str/split path #"/")
+        parts          (string/split path #"/")
         has-version?   (= "_history" (second (reverse parts)))]
     (cond
       (and (> (count parts) 4)
-           (= "_history" (second-last parts))
+           (= "_history" (util/second-last parts))
            has-version?)
       (let [versioned-url-parts (take-last 4 parts)]
         {:type    (format-resource-url-type versioned-url-parts keywordize?)
@@ -263,7 +266,7 @@
    passed in is not a string (or an empty string) an exception is thrown."
   [^String resource-url]
   (if (and (string? resource-url)
-           (not (str/blank? resource-url)))
+           (not (string/blank? resource-url)))
     (boolean
       (try
         (url resource-url)
@@ -297,8 +300,8 @@
   "combines a base URL to a FHIR server and a relative FHIR resource URL into an
    absolute resource URL."
   [base-url relative-url]
-  (if-not (or (str/blank? base-url)
-              (str/blank? relative-url))
+  (if-not (or (string/blank? base-url)
+              (string/blank? relative-url))
     (-> (url base-url relative-url)
         (.toString))))
 
@@ -350,7 +353,7 @@
   [bundle]
   (if-let [next-url (get-bundle-next-page-url bundle)]
     (let [http-req-params (get-base-http-req-params)]
-      (http-get-json next-url http-req-params))))
+      (util/http-get-json next-url http-req-params))))
 
 (defn- concat-bundle-entries [bundle other-bundle]
   (if (nil? bundle)
@@ -400,7 +403,7 @@
    reference:
    contained resources: http://www.hl7.org/implement/standards/fhir/references.html#contained"
   [containing-resource ref-id]
-  (if-not (str/blank? ref-id)
+  (if-not (string/blank? ref-id)
     (if-let [parsed-id (if (.startsWith ref-id "#") (subs ref-id 1))]
       (->> (:contained containing-resource)
            (filter #(= parsed-id (:id %)))
@@ -453,7 +456,7 @@
          url-components (if version
                           ["/" resource-name id "_history" version]
                           ["/" resource-name id])]
-     (get-resource base-url (apply join-paths url-components)))))
+     (get-resource base-url (apply util/join-paths url-components)))))
 
 (defn get-relative-resource
   "gets a single resource from a FHIR server. the server to be queried will be taken from the
@@ -479,10 +482,10 @@
         url-components ["/" resource-name]]
     (fhir-request :get
       base-url
-      (apply join-paths url-components)
+      (apply util/join-paths url-components)
       :params (merge
                 {:_id id}
-                (build-params-map params)))))
+                (util/build-params-map params)))))
 
 (defn history
   "returns a bundle containing the history of a single FHIR resource. note that this history can
@@ -501,8 +504,8 @@
         url-components ["/" resource-name id "_history"]]
     (fhir-request :get
       base-url
-      (apply join-paths url-components)
-      :params (build-params-map params))))
+      (apply util/join-paths url-components)
+      :params (util/build-params-map params))))
 
 (defn search
   "searches for resources on a FHIR server. multiple parameters are ANDed together. use of the search
@@ -521,11 +524,11 @@
         url-components ["/" resource-name "/_search"]]
     (fhir-request :form-post
       base-url
-      (apply join-paths url-components)
+      (apply util/join-paths url-components)
       :params-as-body? true
       :params (merge
                 (search-params->query-map where)
-                (build-params-map params)))))
+                (util/build-params-map params)))))
 
 (defn search-and-fetch
   "same as search, but automatically fetches all pages of resources returning a single bundle
@@ -551,7 +554,7 @@
         return-resource? (if (nil? return-resource?) true return-resource?)]
     (fhir-request :post
       base-url
-      (apply join-paths uri-components)
+      (apply util/join-paths uri-components)
       :body resource
       :follow-location? return-resource?)))
 
@@ -574,7 +577,7 @@
         return-resource? (if (nil? return-resource?) true return-resource?)]
     (fhir-request :put
       base-url
-      (apply join-paths uri-components)
+      (apply util/join-paths uri-components)
       :body resource
       :follow-location? return-resource?)))
 
@@ -589,7 +592,7 @@
         uri-components ["/" resource-name id]]
     (fhir-request :delete
       base-url
-      (apply join-paths uri-components))))
+      (apply util/join-paths uri-components))))
 
 (defn deleted?
   "checks if a resource has been deleted or not. this is based on FHIR servers returning
@@ -597,7 +600,7 @@
   [base-url type id]
   (let [resource-name  (->fhir-resource-name type)
         url-components ["/" resource-name id]
-        relative-url   (apply join-paths url-components)]
+        relative-url   (apply util/join-paths url-components)]
     (try
       (fhir-request :get
                     base-url
@@ -651,13 +654,13 @@
   (:valueDecimal extension))
 
 (defmethod get-extension-value :valueDateTime [extension]
-  (parse-timestamp (:valueDateTime extension)))
+  (util/parse-timestamp (:valueDateTime extension)))
 
 (defmethod get-extension-value :valueDate [extension]
-  (parse-date (:valueDate extension)))
+  (util/parse-date (:valueDate extension)))
 
 (defmethod get-extension-value :valueInstant [extension]
-  (parse-timestamp (:valueInstant extension)))
+  (util/parse-timestamp (:valueInstant extension)))
 
 (defmethod get-extension-value :valueString [extension]
   (:valueString extension))

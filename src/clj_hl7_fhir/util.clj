@@ -1,10 +1,12 @@
 (ns clj-hl7-fhir.util
-  (:import (java.util TimeZone Date)
-           (java.text SimpleDateFormat))
-  (:require [clojure.string :as str]
-            [clj-http.client :as http]
-            [cemerick.url :refer [url url-encode]]
-            [cheshire.core :as json]))
+  (:require
+    [cemerick.url :refer [url url-encode]]
+    [cheshire.core :as json]
+    [clj-http.client :as http]
+    [clojure.string :as string])
+  (:import
+    (java.util TimeZone Date)
+    (java.text SimpleDateFormat)))
 
 (def tz (TimeZone/getDefault))
 (def iso8601-timestamp "yyyy-MM-dd'T'HH:mm:ssXXX")
@@ -35,7 +37,7 @@
   (format-date date iso8601-date))
 
 (defn parse-formatted-timestamp [^String timestamp ^String format]
-  (if-not (str/blank? timestamp)
+  (if-not (string/blank? timestamp)
     (let [df (SimpleDateFormat. format)]
       (.setTimeZone df tz)
       (.parse df timestamp))))
@@ -84,8 +86,8 @@
 (defn join-paths [& paths]
   (as-> paths x
         (remove nil? x)
-        (str/join "/" x)
-        (str/replace x #"(/+)" "/")))
+        (string/join "/" x)
+        (string/replace x #"(/+)" "/")))
 
 (defn build-url [base-url path & [params]]
   (-> (url base-url)
