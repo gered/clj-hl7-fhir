@@ -534,7 +534,7 @@ technically still exists under previous version numbers).
 ### Authentication
 
 If you need to access FHIR resources on a server requiring authentication, you can
-wrap all of your FHIR calls in `with-auth` which takes a parameter that can specify
+wrap all of your FHIR calls in `with-options` which takes a parameter that can specify
 HTTP [basic authentication](http://en.wikipedia.org/wiki/Basic_access_authentication), 
 [digest authentication](http://en.wikipedia.org/wiki/Digest_access_authentication) 
 or an [OAuth bearer token](http://self-issued.info/docs/draft-ietf-oauth-v2-bearer.html).
@@ -550,16 +550,43 @@ strings (username and password) or a single string containing both separated by 
 (search server-url :patient [(eq :name "smith")])
 
 ; HTTP basic auth
-(with-auth {:basic-auth ["user" "pass"]}
+(with-options {:basic-auth ["user" "pass"]}
   (search server-url :patient [(eq :name "smith")]))
 
 ; HTTP digest auth
-(with-auth {:digest-auth ["user" "pass"]}
+(with-options {:digest-auth ["user" "pass"]}
   (search server-url :patient [(eq :name "smith")]))
 
 ; OAuth bearer token
-(with-auth {:oauth-token user-oauth-token}
+(with-options {:oauth-token user-oauth-token}
   (search server-url :patient [(eq :name "smith")]))
+```
+
+### Adding Custom HTTP Headers to FHIR Requests
+
+If the FHIR server you're making requests to needs some additional HTTP headers for
+any reason, you can again use `with-options` to add these.
+
+##### Example
+
+```clojure
+; all FHIR requests within the with-options body will have the specified
+; HTTP headers included
+(with-options {:headers {"FOO" "bar"}}
+  (get-resource server-url :patient 42))
+```
+
+### Self-Signed SSL Certificates
+
+If you need to make request to a FHIR server over HTTPS but it is using a self-signed
+SSL certificate you will again need to use `with-options` and provide the `:insecure?`
+setting.
+
+##### Example
+
+```clojure
+(with-options {:insecure? true}
+  (get-resource server-url :patient 42))
 ```
 
 ### Error Handling
@@ -568,6 +595,10 @@ All API functions throw exceptions via `ex-info` when an unexpected error respon
 returned from the HL7 FHIR server. An "unexpected error response" is anything that
 is not defined to be part of the particular operation's successful result(s). e.g.
 a "read" operation that returns an HTTP 400 or HTTP 500 status instead of HTTP 200.
+
+> **NOTE:** Some servers differ in how they return errors (e.g. different HTTP status
+> codes), so you will want to be sure to test your code's error handling to be sure 
+> errors are caught correctly!
 
 When this type of response is encountered, an exception is thrown which will contain
 the response, which can be obtained in your exception handler via `ex-data`. If the
