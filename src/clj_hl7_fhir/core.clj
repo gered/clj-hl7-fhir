@@ -85,7 +85,7 @@
             (json/parse-string response-body true)
             response-body)))
       (catch ExceptionInfo ex
-        (let [{:keys [status body] :as response} (:object (ex-data ex))
+        (let [{:keys [status body] :as response} (ex-data ex)
               fhir-resource-response?            (fhir-response? response)]
           (throw (ex-info (str "FHIR request failed: HTTP " status)
                           {:status status
