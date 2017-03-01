@@ -41,6 +41,13 @@
   `(binding [*options* (select-keys ~options [:basic-auth :digest-auth :oauth-token :headers :insecure?])]
      ~@body))
 
+(defn- get-base-http-req-params
+  []
+  (merge
+    (if (:insecure? *options*) {:insecure? true})
+    (select-keys *options* [:basic-auth :digest-auth :oauth-token])
+    (if (map? (:headers *options*)) {:headers (:headers *options*)})))
+
 (defn- ->fhir-resource-name [x]
   (name (->CamelCase x)))
 
@@ -53,10 +60,7 @@
         url              (build-url base-url resource-url (if-not params-as-body? query))
         body             (if params-as-body? query body)
         follow-location? (if (nil? follow-location?) true follow-location?)
-        http-req-params  (merge
-                           (if (:insecure? *options*) {:insecure? true})
-                           (select-keys *options* [:basic-auth :digest-auth :oauth-token])
-                           (if (map? (:headers *options*)) {:headers (:headers *options*)}))]
+        http-req-params  (get-base-http-req-params)]
     (try
       (let [response      (case type
                             :get       (http-get-json url http-req-params)
@@ -68,7 +72,7 @@
             location      (get-in response [:headers "Location"])]
         (if location
           (if follow-location?
-            (-> (http-get-json location)
+            (-> (http-get-json location http-req-params)
                 :body
                 (json/parse-string true))
             (if (fhir-response? response)
@@ -345,7 +349,8 @@
    paging: http://hl7.org/implement/standards/fhir/http.html#paging"
   [bundle]
   (if-let [next-url (get-bundle-next-page-url bundle)]
-    (http-get-json next-url)))
+    (let [http-req-params (get-base-http-req-params)]
+      (http-get-json next-url http-req-params))))
 
 (defn- concat-bundle-entries [bundle other-bundle]
   (if (nil? bundle)
