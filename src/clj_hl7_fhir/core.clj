@@ -701,6 +701,6 @@
        (first)
        (get-extension-value)))
 
-;(def server-url "http://fhir.healthintersections.com.au/open")
+;(def server-url "http://fhir2.healthintersections.com.au/open")
 ;(def server-url "http://spark.furore.com/fhir")
-;(def server-url "http://fhirtest.uhn.ca/base")
+;(def server-url "http://fhirtest.uhn.ca/baseDstu2")

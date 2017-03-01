@@ -79,7 +79,7 @@ for which all API calls are made to.
 For example, to use [UHN's HAPI FHIR test server](http://fhirtest.uhn.ca/):
 
 ```clojure
-(def server-url "http://fhirtest.uhn.ca/base")
+(def server-url "http://fhirtest.uhn.ca/baseDstu2")
 ```
 
 ### read / vread
