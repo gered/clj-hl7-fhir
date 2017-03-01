@@ -13,12 +13,12 @@ How you create and/or read the HL7 data and what you do with it is beyond the sc
 ## Leiningen
 
 ```clojure
-[clj-hl7-fhir "0.2.9"]
+[clj-hl7-fhir "0.3.1"]
 ```
 	
 ## TODO
 
-This library is still early along in development, and some important features are missing at the moment:
+This library is still missing some important features at the moment:
 
 * Remaining API calls
   * [validate](http://hl7.org/implement/standards/fhir/http.html#validate)
